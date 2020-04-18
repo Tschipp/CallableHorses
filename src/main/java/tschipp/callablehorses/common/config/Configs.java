@@ -41,6 +41,8 @@ public class Configs {
 		@Comment("Prevents personal horses from dropping items (like leather). This won't prevent armor or saddles from dropping. If this is disabled in combination with deathIsPermanent, it can become a really easy way to farm/duplicate leather, so keep that in mind.")
 		public boolean disableHorseDrops = true;
 		
+		@Comment("If you need a 3x3x3 space to call your horse")
+		public boolean checkForSpace = true;
 	}
 
 }

@@ -7,6 +7,8 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
@@ -14,6 +16,7 @@ import net.minecraft.entity.passive.AbstractChestHorse;
 import net.minecraft.entity.passive.AbstractHorse;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.Blocks;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.EnumHand;
@@ -34,13 +37,14 @@ import scala.util.Random;
 import tschipp.callablehorses.CallableHorses;
 import tschipp.callablehorses.common.capabilities.horseowner.IHorseOwner;
 import tschipp.callablehorses.common.capabilities.storedhorse.IStoredHorse;
+import tschipp.callablehorses.common.config.CallableHorsesConfig;
 import tschipp.callablehorses.common.helper.HorseHelper;
 import tschipp.callablehorses.common.worlddata.StoredHorsesWorldData;
 import tschipp.callablehorses.network.OwnerSyncShowStatsPacket;
 
 public class HorseManager
 {
-	
+
 	public static boolean callHorse(EntityPlayer player)
 	{
 		if (player != null)
@@ -57,9 +61,8 @@ public class HorseManager
 				if (!canCallHorse(player))
 					return false;
 				Random rand = new Random();
-		        player.world.playSound(null, player.posX, player.posY, player.posZ, WhistleSounds.getRandomWhistle(), SoundCategory.PLAYERS, 1f, (float)(1.4 + rand.nextGaussian()/3));
+				player.world.playSound(null, player.posX, player.posY, player.posZ, WhistleSounds.getRandomWhistle(), SoundCategory.PLAYERS, 1f, (float) (1.4 + rand.nextGaussian() / 3));
 
-				
 				AbstractHorse e = findHorseWithStorageID(horseOwner.getStorageUUID(), player.world);
 				if (e != null)
 				{
@@ -68,13 +71,15 @@ public class HorseManager
 					{
 						if (e.world.provider.getDimension() == player.world.provider.getDimension())
 						{
+							e.removePassengers();
+
 							if (e.getPosition().distanceSq(player.getPosition()) <= settings.horseWalkRange * settings.horseWalkRange)
 							{
 								// Horse walks
-								e.removePassengers();
 								e.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(settings.horseWalkRange);
 								e.getNavigator().tryMoveToEntityLiving(player, settings.horseSpeed);
-							} else
+							}
+							else
 							{
 								// TP-ing the horse
 								e.setPosition(player.posX, player.posY, player.posZ);
@@ -82,7 +87,8 @@ public class HorseManager
 							HorseHelper.sendHorseUpdateInRange(e);
 							HorseHelper.setHorseLastSeen(player);
 							return true;
-						} else
+						}
+						else
 						{
 							// Removing any loaded horses in other dims when a
 							// new one is spawned
@@ -107,7 +113,7 @@ public class HorseManager
 			}
 
 		}
-		
+
 		return false;
 	}
 
@@ -155,7 +161,8 @@ public class HorseManager
 					if (ent != null)
 					{
 						clearHorse(HorseHelper.getHorseCap(ent));
-					} else
+					}
+					else
 					{
 						StoredHorsesWorldData data = HorseHelper.getWorldData(player.world);
 						data.disbandHorse(ownedID);
@@ -261,6 +268,39 @@ public class HorseManager
 			return false;
 		}
 
+		if (CallableHorsesConfig.settings.checkForSpace)
+		{
+			double startX, startY, startZ;
+			double endX, endY, endZ;
+			
+			startX = player.posX - 1;
+			startY = player.posY;
+			startZ = player.posZ - 1;
+			
+			endX = player.posX + 1;
+			endY = player.posY + 2;
+			endZ = player.posZ + 1;
+			
+			World world = player.world;
+
+			for(double x = startX; x <= endX; x++)
+			{
+				for(double y = startY; y <= endY; y++)
+				{
+					for(double z = startZ; z <= endZ; z++)
+					{
+						BlockPos pos = new BlockPos(x,y,z);
+						IBlockState state = world.getBlockState(pos);
+						if(state.getBlock().getCollisionBoundingBox(state, world, pos) != null)
+						{
+							player.sendStatusMessage(new TextComponentString(TextFormatting.RED + I18n.translateToLocal("callablehorses.error.nospace")), true);
+							return false;
+						}
+					}
+				}
+			}
+		}
+
 		if (!settings.callableInEveryDimension)
 		{
 			int[] allowedDims = settings.callableDimsWhitelist;
@@ -343,7 +383,8 @@ public class HorseManager
 					horseOwner.setHorseNBT(nbt);
 					horseOwner.setLastSeenDim(e.dimension);
 					horseOwner.setLastSeenPosition(e.getPosition());
-				} else
+				}
+				else
 				{
 					StoredHorsesWorldData data = HorseHelper.getWorldData(world);
 					data.addOfflineSavedHorse(horse.getStorageUUID(), e.serializeNBT());

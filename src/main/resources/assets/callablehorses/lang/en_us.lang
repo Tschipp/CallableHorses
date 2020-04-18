@@ -12,6 +12,7 @@ callablehorses.error.alreadypersonal=This is already your personal horse!
 callablehorses.error.area=You can't call your horse in this area!
 callablehorses.error.range=Your horse is too far away to hear you!
 callablehorses.error.setarea=You can't set your horse in this area!
+callablehorses.error.nospace=There is not enough space here to call your horse!
 
 callablehorses.success=This is now your personal horse!
 
