@@ -1,41 +1,44 @@
 package tschipp.callablehorses.common.capabilities.horseowner;
 
-import java.util.UUID;
-
-import net.minecraft.nbt.NBTBase;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.INBT;
 import net.minecraft.nbt.NBTUtil;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.Direction;
+import net.minecraft.util.RegistryKey;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.util.registry.Registry;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.Capability.IStorage;
 
 public class HorseOwnerStorage implements IStorage<IHorseOwner> {
 
 	@Override
-	public NBTBase writeNBT(Capability<IHorseOwner> capability, IHorseOwner instance, EnumFacing side) {
+	public INBT writeNBT(Capability<IHorseOwner> capability, IHorseOwner instance, Direction Dist) {
 
-		NBTTagCompound tag = new NBTTagCompound();
+		CompoundNBT tag = new CompoundNBT();
 
-		tag.setTag("horse", instance.getHorseNBT());
-		tag.setInteger("horseNum", instance.getHorseNum());
-		tag.setString("uuid", instance.getStorageUUID());
-		tag.setTag("lastSeenPos", NBTUtil.createPosTag(instance.getLastSeenPosition()));
-		tag.setInteger("lastSeenDim", instance.getLastSeenDim());
+		tag.put("horse", instance.getHorseNBT());
+		tag.putInt("horseNum", instance.getHorseNum());
+		tag.putString("uuid", instance.getStorageUUID());
+		tag.put("lastSeenPos", NBTUtil.writeBlockPos(new BlockPos(instance.getLastSeenPosition())));
+		tag.putString("lastSeenDim", instance.getLastSeenDim().func_240901_a_().toString());		
 		return tag;
+		
 
 	}
 
 	@Override
-	public void readNBT(Capability<IHorseOwner> capability, IHorseOwner instance, EnumFacing side, NBTBase nbt) {
+	public void readNBT(Capability<IHorseOwner> capability, IHorseOwner instance, Direction Dist, INBT nbt) {
 
-		NBTTagCompound tag = (NBTTagCompound) nbt;
+		CompoundNBT tag = (CompoundNBT) nbt;
 
-		instance.setHorseNBT(tag.getCompoundTag("horse"));
-		instance.setHorseNum(tag.getInteger("horseNum"));
+		instance.setHorseNBT(tag.getCompound("horse"));
+		instance.setHorseNum(tag.getInt("horseNum"));
 		instance.setStorageUUID(tag.getString("uuid"));
-		instance.setLastSeenPosition(NBTUtil.getPosFromTag(tag.getCompoundTag("lastSeenPos")));
-		instance.setLastSeenDim(tag.getInteger("lastSeenDim"));
+		BlockPos temp = NBTUtil.readBlockPos(tag.getCompound("lastSeenPos"));
+		instance.setLastSeenPosition(new Vector3d(temp.getX(), temp.getY(), temp.getZ()));
+		instance.setLastSeenDim(RegistryKey.func_240903_a_(Registry.WORLD_KEY, new ResourceLocation(tag.getString("lastSeenDim"))));
 	}
-
 }

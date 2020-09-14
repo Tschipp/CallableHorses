@@ -1,13 +1,16 @@
 package tschipp.callablehorses.common;
 
 import java.util.ArrayList;
-import java.util.Random;
 
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvent;
-import net.minecraftforge.fml.common.registry.ForgeRegistries;
+import net.minecraftforge.event.RegistryEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 import tschipp.callablehorses.CallableHorses;
 
+@EventBusSubscriber(bus = Bus.FORGE, modid = CallableHorses.MODID)
 public class WhistleSounds
 {
 
@@ -25,7 +28,6 @@ public class WhistleSounds
 		final ResourceLocation soundID = new ResourceLocation(CallableHorses.MODID, soundName);
 		SoundEvent s = new SoundEvent(soundID);
 		s.setRegistryName(soundID);
-		ForgeRegistries.SOUND_EVENTS.register(s);
 		sounds.add(s);
 		return s;
 	}
@@ -33,6 +35,12 @@ public class WhistleSounds
 	public static SoundEvent getRandomWhistle()
 	{
 		return whistle;
+	}
+	
+	@SubscribeEvent
+	public static void onRegistry(RegistryEvent.Register<SoundEvent> event)
+	{
+		event.getRegistry().registerAll(sounds.toArray(new SoundEvent[sounds.size()]));
 	}
 
 }

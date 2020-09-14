@@ -1,22 +1,14 @@
 package tschipp.callablehorses.network;
 
-import io.netty.buffer.ByteBuf;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.util.IThreadListener;
-import net.minecraft.util.SoundCategory;
-import net.minecraft.world.WorldServer;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
-import scala.util.Random;
+import java.util.function.Supplier;
+
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.network.PacketBuffer;
+import net.minecraftforge.fml.network.NetworkEvent;
 import tschipp.callablehorses.common.HorseManager;
-import tschipp.callablehorses.common.WhistleSounds;
 
-public class PressKeyPacket implements IMessage, IMessageHandler<PressKeyPacket, IMessage>
+public class PressKeyPacket
 {
-	private static Random rand = new Random();
-
-	
 	private int key;
 
 	public PressKeyPacket()
@@ -28,46 +20,42 @@ public class PressKeyPacket implements IMessage, IMessageHandler<PressKeyPacket,
 		this.key = key;
 	}
 
-	@Override
-	public void fromBytes(ByteBuf buf)
+	public PressKeyPacket(PacketBuffer buf)
 	{
 		this.key = buf.readInt();
 	}
 
-	@Override
-	public void toBytes(ByteBuf buf)
+	public void toBytes(PacketBuffer buf)
 	{
 		buf.writeInt(key);
 	}
 
-	@Override
-	public IMessage onMessage(PressKeyPacket message, MessageContext ctx)
+	public void handle(Supplier<NetworkEvent.Context> ctx)
 	{
-		IThreadListener mainThread = (WorldServer) ctx.getServerHandler().player.world;
+		if (ctx.get().getDirection().getReceptionSide().isServer())
+		{
+			ctx.get().enqueueWork(() -> {
 
-		mainThread.addScheduledTask(new Runnable() {
-			EntityPlayerMP player = ctx.getServerHandler().player;
+				ServerPlayerEntity player = ctx.get().getSender();
 
-			@Override
-			public void run()
-			{
-				switch(message.key)
+				if (player != null)
 				{
-				case 0:
-					HorseManager.callHorse(player);
-					break;
-				case 1:
-					HorseManager.setHorse(player);
-					break;
-				case 2:
-					HorseManager.showHorseStats(player);
-				
+					switch (key)
+					{
+					case 0:
+						HorseManager.callHorse(player);
+						break;
+					case 1:
+						HorseManager.setHorse(player);
+						break;
+					case 2:
+						HorseManager.showHorseStats(player);
+
+					}
 				}
-			}
 
-		});
-
-		return null;
+			});
+		}
 	}
 
 }

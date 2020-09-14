@@ -1,16 +1,20 @@
 package tschipp.callablehorses.common.helper;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
-import net.minecraftforge.fml.common.network.NetworkRegistry.TargetPoint;
+import net.minecraft.world.server.ServerWorld;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.fml.network.PacketDistributor;
+import net.minecraftforge.fml.network.PacketDistributor.TargetPoint;
 import tschipp.callablehorses.CallableHorses;
 import tschipp.callablehorses.common.capabilities.horseowner.HorseOwnerProvider;
 import tschipp.callablehorses.common.capabilities.horseowner.IHorseOwner;
@@ -21,57 +25,77 @@ import tschipp.callablehorses.network.HorseCapSyncPacket;
 
 public class HorseHelper
 {
-	public static IHorseOwner getOwnerCap(EntityPlayer player)
+	private static Map<Entity, LazyOptional<IStoredHorse>> cachedHorses = new HashMap<Entity, LazyOptional<IStoredHorse>>();
+
+	public static IHorseOwner getOwnerCap(PlayerEntity player)
 	{
-		return player.getCapability(HorseOwnerProvider.OWNER_CAPABILITY, null);
+		LazyOptional<IHorseOwner> cap = player.getCapability(HorseOwnerProvider.OWNER_CAPABILITY, null);
+		if (cap.isPresent())
+			return cap.resolve().get();
+
+		return null;
 	}
-	
+
 	public static IStoredHorse getHorseCap(Entity horse)
 	{
-		return horse.getCapability(HorseProvider.HORSE_CAPABILITY, null);
+		LazyOptional<IStoredHorse> cap = cachedHorses.get(horse);
+		if (cap == null)
+		{
+			cap = horse.getCapability(HorseProvider.HORSE_CAPABILITY, null);
+			cachedHorses.put(horse, cap);
+			cap.addListener(optional -> {
+				cachedHorses.remove(horse);
+			});
+		}
+		if (cap.isPresent())
+			return cap.resolve().get();
+
+		return null;
 	}
-	
+
 	public static void sendHorseUpdateInRange(Entity horse)
 	{
 		IStoredHorse storedHorse = getHorseCap(horse);
-		CallableHorses.network.sendToAllAround(new HorseCapSyncPacket(horse.getEntityId(), storedHorse), new TargetPoint(horse.world.provider.getDimension(), horse.posX, horse.posZ, horse.posZ, 32));
+		CallableHorses.network.send(PacketDistributor.NEAR.with(() -> new TargetPoint(horse.getPosX(), horse.getPosZ(), horse.getPosZ(), 32, horse.world.func_234923_W_())), new HorseCapSyncPacket(horse.getEntityId(), storedHorse));
 	}
-	
-	public static void sendHorseUpdateToClient(Entity horse, EntityPlayer player)
+
+	public static void sendHorseUpdateToClient(Entity horse, PlayerEntity player)
 	{
 		IStoredHorse storedHorse = getHorseCap(horse);
-		CallableHorses.network.sendTo(new HorseCapSyncPacket(horse.getEntityId(), storedHorse), (EntityPlayerMP) player);
+		CallableHorses.network.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) player), new HorseCapSyncPacket(horse.getEntityId(), storedHorse));
 	}
-	
+
 	@Nullable
-	public static EntityPlayer getPlayerFromUUID(String uuid, World world)
+	public static PlayerEntity getPlayerFromUUID(String uuid, World world)
 	{
-		MinecraftServer server = ((WorldServer)world).getMinecraftServer();
-		EntityPlayerMP owner = server.getPlayerList().getPlayerByUUID(UUID.fromString(uuid));
-		
+		MinecraftServer server = world.getServer();
+		ServerPlayerEntity owner = server.getPlayerList().getPlayerByUUID(UUID.fromString(uuid));
+
 		return owner;
 	}
-	
-	public static void setHorseNum(World world, String storageid, int num)
+
+	public static void setHorseNum(ServerWorld world, String storageid, int num)
 	{
-		StoredHorsesWorldData storedHorses = StoredHorsesWorldData.getInstance(world);
-		storedHorses.addHorseNum(storageid, num);
+		world.getServer().getWorlds().forEach(serverworld -> {
+			StoredHorsesWorldData storedHorses = StoredHorsesWorldData.getInstance(serverworld);
+			storedHorses.addHorseNum(storageid, num);
+		});
 	}
-	
-	public static int getHorseNum(World world, String storageid)
+
+	public static int getHorseNum(ServerWorld world, String storageid)
 	{
 		StoredHorsesWorldData storedHorses = StoredHorsesWorldData.getInstance(world);
 		return storedHorses.getHorseNum(storageid);
 	}
-	
-	public static void setHorseLastSeen(EntityPlayer player)
+
+	public static void setHorseLastSeen(PlayerEntity player)
 	{
 		IHorseOwner owner = getOwnerCap(player);
-		owner.setLastSeenPosition(player.getPosition());
-		owner.setLastSeenDim(player.world.provider.getDimension());
+		owner.setLastSeenPosition(player.getPositionVec());
+		owner.setLastSeenDim(player.world.func_234923_W_());
 	}
-	
-	public static StoredHorsesWorldData getWorldData(World world)
+
+	public static StoredHorsesWorldData getWorldData(ServerWorld world)
 	{
 		return StoredHorsesWorldData.getInstance(world);
 	}

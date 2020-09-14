@@ -1,15 +1,5 @@
 package tschipp.callablehorses.common.capabilities.storedhorse;
 
-import java.util.UUID;
-
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityList;
-import net.minecraft.entity.passive.AbstractHorse;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.world.World;
-import tschipp.callablehorses.CallableHorses;
-
 public class StoredHorse implements IStoredHorse
 {
 

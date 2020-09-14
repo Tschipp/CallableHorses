@@ -1,0 +1,11 @@
+{
+  "conditions": [
+    {
+	  "condition": "minecraft:entity_properties",
+	  "predicate": {
+		   "type": "#callablehorses:callablehorses"
+	  },
+	  "entity": "THIS"
+    }
+  ]
+}

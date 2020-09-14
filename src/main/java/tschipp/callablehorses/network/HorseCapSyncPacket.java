@@ -1,73 +1,61 @@
 package tschipp.callablehorses.network;
 
-import io.netty.buffer.ByteBuf;
+import java.util.function.Supplier;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.IThreadListener;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.world.World;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.minecraftforge.fml.network.NetworkEvent;
 import tschipp.callablehorses.common.capabilities.storedhorse.HorseProvider;
 import tschipp.callablehorses.common.capabilities.storedhorse.IStoredHorse;
 import tschipp.callablehorses.common.helper.HorseHelper;
 
-public class HorseCapSyncPacket implements IMessage, IMessageHandler<HorseCapSyncPacket, IMessage>
+public class HorseCapSyncPacket
 {
 	private int entityID = 0;
-	private NBTTagCompound horseNBT = null;
-	
+	private CompoundNBT horseNBT = null;
+
 	public HorseCapSyncPacket()
 	{
 	}
-	
+
 	public HorseCapSyncPacket(int entityID, IStoredHorse horse)
 	{
 		this.entityID = entityID;
-		this.horseNBT = (NBTTagCompound) HorseProvider.HORSE_CAPABILITY.getStorage().writeNBT(HorseProvider.HORSE_CAPABILITY, horse, null);
+		this.horseNBT = (CompoundNBT) HorseProvider.HORSE_CAPABILITY.getStorage().writeNBT(HorseProvider.HORSE_CAPABILITY, horse, null);
 	}
-	
-	
 
-	@Override
-	public void fromBytes(ByteBuf buf)
+	public HorseCapSyncPacket(PacketBuffer buf)
 	{
 		this.entityID = buf.readInt();
-		this.horseNBT = ByteBufUtils.readTag(buf);
+		this.horseNBT = buf.readCompoundTag();
 	}
 
-	@Override
-	public void toBytes(ByteBuf buf)
+	public void toBytes(PacketBuffer buf)
 	{
-		buf.writeInt(entityID);	
-		ByteBufUtils.writeTag(buf, horseNBT);
+		buf.writeInt(entityID);
+		buf.writeCompoundTag(horseNBT);
 	}
-	
-	@Override
-	public IMessage onMessage(HorseCapSyncPacket message, MessageContext ctx)
-	{
-		IThreadListener mainThread = Minecraft.getMinecraft();
 
-		mainThread.addScheduledTask(new Runnable()
+	public void handle(Supplier<NetworkEvent.Context> ctx)
+	{
+		if (ctx.get().getDirection().getReceptionSide().isClient())
 		{
-			World world = Minecraft.getMinecraft().world;
+			ctx.get().enqueueWork(() -> {
 
-			@Override
-			public void run()
-			{
-				Entity e = world.getEntityByID(message.entityID);
-				if(e != null)
+				World world = Minecraft.getInstance().world;
+
+				Entity e = world.getEntityByID(entityID);
+				if (e != null)
 				{
 					IStoredHorse horse = HorseHelper.getHorseCap(e);
-					HorseProvider.HORSE_CAPABILITY.getStorage().readNBT(HorseProvider.HORSE_CAPABILITY, horse, null, message.horseNBT);
+					HorseProvider.HORSE_CAPABILITY.getStorage().readNBT(HorseProvider.HORSE_CAPABILITY, horse, null, horseNBT);
 				}
-			}
 
-		});
-		
-		return null;
+			});
+		}
 	}
 
 }

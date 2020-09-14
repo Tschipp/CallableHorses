@@ -1,37 +1,34 @@
 package tschipp.callablehorses.common.capabilities.storedhorse;
 
-import java.util.UUID;
-
-import net.minecraft.nbt.NBTBase;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.INBT;
+import net.minecraft.util.Direction;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.Capability.IStorage;
 
 public class HorseStorage implements IStorage<IStoredHorse> {
 
 	@Override
-	public NBTBase writeNBT(Capability<IStoredHorse> capability, IStoredHorse instance, EnumFacing side) {
+	public INBT writeNBT(Capability<IStoredHorse> capability, IStoredHorse instance, Direction Dist) {
 
-		NBTTagCompound tag = new NBTTagCompound();
+		CompoundNBT tag = new CompoundNBT();
 
-		tag.setString("owner", instance.getOwnerUUID());
-		tag.setInteger("horseNum", instance.getHorseNum());
-		tag.setString("storage", instance.getStorageUUID());
-		tag.setBoolean("owned", instance.isOwned());
+		tag.putString("owner", instance.getOwnerUUID());
+		tag.putInt("horseNum", instance.getHorseNum());
+		tag.putString("storage", instance.getStorageUUID());
+		tag.putBoolean("owned", instance.isOwned());
 		
 		return tag;
 
 	}
 
 	@Override
-	public void readNBT(Capability<IStoredHorse> capability, IStoredHorse instance, EnumFacing side, NBTBase nbt) {
+	public void readNBT(Capability<IStoredHorse> capability, IStoredHorse instance, Direction Dist, INBT nbt) {
 
-		NBTTagCompound tag = (NBTTagCompound) nbt;
+		CompoundNBT tag = (CompoundNBT) nbt;
 
 		instance.setOwnerUUID(tag.getString("owner"));
-		instance.setHorseNum(tag.getInteger("horseNum"));
+		instance.setHorseNum(tag.getInt("horseNum"));
 		instance.setStorageUUID(tag.getString("storage"));
 		instance.setOwned(tag.getBoolean("owned"));
 	}

@@ -1,75 +1,58 @@
 package tschipp.callablehorses.network;
 
-import io.netty.buffer.ByteBuf;
+import java.util.function.Supplier;
+
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.IThreadListener;
-import net.minecraft.world.World;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
-import tschipp.callablehorses.CallableHorses;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.network.PacketBuffer;
+import net.minecraftforge.fml.network.NetworkEvent;
+import tschipp.callablehorses.client.gui.GuiStatViewer;
 import tschipp.callablehorses.common.capabilities.horseowner.HorseOwnerProvider;
 import tschipp.callablehorses.common.capabilities.horseowner.IHorseOwner;
-import tschipp.callablehorses.common.capabilities.storedhorse.HorseProvider;
-import tschipp.callablehorses.common.capabilities.storedhorse.IStoredHorse;
 import tschipp.callablehorses.common.helper.HorseHelper;
 
-public class OwnerSyncShowStatsPacket implements IMessage, IMessageHandler<OwnerSyncShowStatsPacket, IMessage>
+public class OwnerSyncShowStatsPacket
 {
-	private NBTTagCompound ownerNBT = null;
-	
+	private CompoundNBT ownerNBT = null;
+
 	public OwnerSyncShowStatsPacket()
 	{
 	}
-	
+
 	public OwnerSyncShowStatsPacket(IHorseOwner owner)
 	{
-		this.ownerNBT = (NBTTagCompound) HorseOwnerProvider.OWNER_CAPABILITY.getStorage().writeNBT(HorseOwnerProvider.OWNER_CAPABILITY, owner, null);
-	}
-	
-
-	@Override
-	public void fromBytes(ByteBuf buf)
-	{
-		this.ownerNBT = ByteBufUtils.readTag(buf);
+		this.ownerNBT = (CompoundNBT) HorseOwnerProvider.OWNER_CAPABILITY.getStorage().writeNBT(HorseOwnerProvider.OWNER_CAPABILITY, owner, null);
 	}
 
-	@Override
-	public void toBytes(ByteBuf buf)
+	public OwnerSyncShowStatsPacket(PacketBuffer buf)
 	{
-		ByteBufUtils.writeTag(buf, ownerNBT);
+		this.ownerNBT = buf.readCompoundTag();
 	}
-	
-	@Override
-	public IMessage onMessage(OwnerSyncShowStatsPacket message, MessageContext ctx)
-	{
-		IThreadListener mainThread = Minecraft.getMinecraft();
 
-		mainThread.addScheduledTask(new Runnable()
+	public void toBytes(PacketBuffer buf)
+	{
+		buf.writeCompoundTag(ownerNBT);
+	}
+
+	public void handle(Supplier<NetworkEvent.Context> ctx)
+	{
+		if (ctx.get().getDirection().getReceptionSide().isClient())
 		{
-			World world = Minecraft.getMinecraft().world;
-			EntityPlayer player = Minecraft.getMinecraft().player;
-			
-			@Override
-			public void run()
-			{
-				if(player != null)
+			ctx.get().enqueueWork(() -> {
+
+				PlayerEntity player = Minecraft.getInstance().player;
+
+				if (player != null)
 				{
 					IHorseOwner owner = HorseHelper.getOwnerCap(player);
-					HorseOwnerProvider.OWNER_CAPABILITY.getStorage().readNBT(HorseOwnerProvider.OWNER_CAPABILITY, owner, null, message.ownerNBT);
-				
-					player.openGui(CallableHorses.instance, 0, player.world, 0, 0, 0);
+					HorseOwnerProvider.OWNER_CAPABILITY.getStorage().readNBT(HorseOwnerProvider.OWNER_CAPABILITY, owner, null, ownerNBT);
 
+					Minecraft.getInstance().displayGuiScreen(new GuiStatViewer(player));
 				}
-			}
 
-		});
-		
-		return null;
+			});
+		}
 	}
 
 }

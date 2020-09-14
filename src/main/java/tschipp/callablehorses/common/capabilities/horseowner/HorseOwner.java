@@ -1,83 +1,97 @@
 package tschipp.callablehorses.common.capabilities.horseowner;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityList;
-import net.minecraft.entity.passive.AbstractHorse;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.passive.horse.AbstractHorseEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.util.RegistryKey;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
+import net.minecraftforge.common.util.LazyOptional;
 import tschipp.callablehorses.CallableHorses;
 import tschipp.callablehorses.common.capabilities.storedhorse.HorseProvider;
 import tschipp.callablehorses.common.capabilities.storedhorse.IStoredHorse;
-import tschipp.callablehorses.common.helper.HorseHelper;
-import tschipp.callablehorses.common.worlddata.StoredHorsesWorldData;
 
 public class HorseOwner implements IHorseOwner
 {
 
 	private int horseNum = 0;
-	private NBTTagCompound horseNBT = new NBTTagCompound();
+	private CompoundNBT horseNBT = new CompoundNBT();
 	private String storageUUID = "";
-	private int lastSeenDim = 0;
-	private BlockPos lastSeenPos = BlockPos.ORIGIN;
-	
+	private RegistryKey<World> lastSeenDim = RegistryKey.func_240903_a_(Registry.WORLD_KEY, new ResourceLocation("overworld"));
+	private Vector3d lastSeenPos = Vector3d.ZERO;
+
 	@Override
-	public AbstractHorse getHorseEntity(World world)
+	public AbstractHorseEntity createHorseEntity(World world)
 	{
-		Entity entity = EntityList.createEntityFromNBT(horseNBT, world);
-		if (entity instanceof AbstractHorse)
-		{	
-			horseNum++;
+		Optional<EntityType<?>> type = EntityType.readEntityType(horseNBT);
 
-			IStoredHorse horse = entity.getCapability(HorseProvider.HORSE_CAPABILITY, null);
-			horse.setHorseNum(horseNum);
+		if (type.isPresent())
+		{
+			Entity entity = type.get().create(world);
+			if (entity instanceof AbstractHorseEntity)
+			{
+				entity.read(horseNBT);
 
-			entity.setUniqueId(UUID.randomUUID());
-			entity.extinguish();
-			((AbstractHorse) entity).hurtTime = 0;
-			entity.dimension = world.provider.getDimension();
-			entity.timeUntilPortal = 0;
+				horseNum++;
 
-			return (AbstractHorse) entity;
+				LazyOptional<IStoredHorse> cap = entity.getCapability(HorseProvider.HORSE_CAPABILITY, null);
+				if (cap.isPresent())
+				{
+					cap.resolve().get().setHorseNum(horseNum);
+
+					entity.setUniqueId(UUID.randomUUID());
+					entity.extinguish();
+					((AbstractHorseEntity) entity).hurtTime = 0;
+				}
+
+				return (AbstractHorseEntity) entity;
+			}
+
+			CallableHorses.LOGGER.error("The entity with NBT " + horseNBT.toString() + " wasn't a horse somehow?...");
 		}
-
-		CallableHorses.LOGGER.error("The entity with NBT " + horseNBT.toString() + " wasn't a horse somehow?...");
 		return null;
 	}
 
 	@Override
-	public NBTTagCompound getHorseNBT()
+	public CompoundNBT getHorseNBT()
 	{
 		return horseNBT;
 	}
 
 	@Override
-	public void setHorse(AbstractHorse horse, EntityPlayer player)
+	public void setHorse(AbstractHorseEntity horse, PlayerEntity player)
 	{
 		storageUUID = UUID.randomUUID().toString();
 
-		IStoredHorse storedHorse = horse.getCapability(HorseProvider.HORSE_CAPABILITY, null);
-		storedHorse.setHorseNum(horseNum);
-		storedHorse.setOwned(true);
-		storedHorse.setOwnerUUID(player.getGameProfile().getId().toString());
-		storedHorse.setStorageUUID(storageUUID);
+		LazyOptional<IStoredHorse> cap = horse.getCapability(HorseProvider.HORSE_CAPABILITY, null);
 
-		NBTTagCompound tag = horse.serializeNBT();
+		cap.ifPresent(storedHorse -> {
+			storedHorse.setHorseNum(horseNum);
+			storedHorse.setOwned(true);
+			storedHorse.setOwnerUUID(player.getGameProfile().getId().toString());
+			storedHorse.setStorageUUID(storageUUID);
 
-		horseNBT = tag;
+			CompoundNBT tag = horse.serializeNBT();
+
+			horseNBT = tag;
+		});
 	}
 
 	@Override
 	public void clearHorse()
 	{
 		horseNum = 0;
-		horseNBT = new NBTTagCompound();
+		horseNBT = new CompoundNBT();
 		storageUUID = "";
-		lastSeenDim = 0;
-		lastSeenPos = BlockPos.ORIGIN;
+		lastSeenDim = RegistryKey.func_240903_a_(Registry.WORLD_KEY, new ResourceLocation("overworld"));
+		lastSeenPos = Vector3d.ZERO;
 	}
 
 	@Override
@@ -105,33 +119,33 @@ public class HorseOwner implements IHorseOwner
 	}
 
 	@Override
-	public void setHorseNBT(NBTTagCompound nbt)
+	public void setHorseNBT(CompoundNBT nbt)
 	{
 		this.horseNBT = nbt;
 	}
 
 	@Override
-	public void setLastSeenPosition(BlockPos pos)
+	public void setLastSeenPosition(Vector3d pos)
 	{
 		this.lastSeenPos = pos;
 	}
 
 	@Override
-	public BlockPos getLastSeenPosition()
+	public Vector3d getLastSeenPosition()
 	{
 		return this.lastSeenPos;
 	}
 
 	@Override
-	public int getLastSeenDim()
+	public RegistryKey<World> getLastSeenDim()
 	{
 		return this.lastSeenDim;
 	}
 
 	@Override
-	public void setLastSeenDim(int i)
+	public void setLastSeenDim(RegistryKey<World> dim)
 	{
-		this.lastSeenDim = i;
+		this.lastSeenDim = dim;
 	}
 
 }

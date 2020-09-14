@@ -1,13 +1,14 @@
 package tschipp.callablehorses;
 
+import java.util.Optional;
+
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.capabilities.CapabilityManager;
-import net.minecraftforge.fml.common.Mod.EventHandler;
-import net.minecraftforge.fml.common.event.FMLInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.common.network.NetworkRegistry;
-import net.minecraftforge.fml.relauncher.Side;
-import tschipp.callablehorses.client.gui.GuiHandler;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.network.NetworkDirection;
+import net.minecraftforge.fml.network.NetworkRegistry;
 import tschipp.callablehorses.common.WhistleSounds;
 import tschipp.callablehorses.common.capabilities.horseowner.HorseOwner;
 import tschipp.callablehorses.common.capabilities.horseowner.HorseOwnerStorage;
@@ -19,35 +20,23 @@ import tschipp.callablehorses.network.HorseCapSyncPacket;
 import tschipp.callablehorses.network.OwnerSyncShowStatsPacket;
 import tschipp.callablehorses.network.PressKeyPacket;
 
+@EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class CommonProxy
 {
-
-	@EventHandler
-	public void preInit(FMLPreInitializationEvent event)
+	public static void setup(FMLCommonSetupEvent event)
 	{
-		CallableHorses.network = NetworkRegistry.INSTANCE.newSimpleChannel("CallableHorses");
-		
-		CallableHorses.network.registerMessage(PressKeyPacket.class, PressKeyPacket.class, 0, Side.SERVER);
-		CallableHorses.network.registerMessage(HorseCapSyncPacket.class, HorseCapSyncPacket.class, 1, Side.CLIENT);
-		CallableHorses.network.registerMessage(OwnerSyncShowStatsPacket.class, OwnerSyncShowStatsPacket.class, 2, Side.CLIENT);
+		String version = CallableHorses.info.getVersion().toString();
+
+		CallableHorses.network = NetworkRegistry.newSimpleChannel(new ResourceLocation(CallableHorses.MODID, "callablehorseschannel"), () -> version, version::equals, version::equals);
+
+		CallableHorses.network.registerMessage(0, HorseCapSyncPacket.class, HorseCapSyncPacket::toBytes, HorseCapSyncPacket::new, HorseCapSyncPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+		CallableHorses.network.registerMessage(1, OwnerSyncShowStatsPacket.class, OwnerSyncShowStatsPacket::toBytes, OwnerSyncShowStatsPacket::new, OwnerSyncShowStatsPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+		CallableHorses.network.registerMessage(2, PressKeyPacket.class, PressKeyPacket::toBytes, PressKeyPacket::new, PressKeyPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
 
 		WhistleSounds.registerSounds();
-		
-	}
 
-	@EventHandler
-	public void init(FMLInitializationEvent event)
-	{
-		//Caps
+		// Caps
 		CapabilityManager.INSTANCE.register(IHorseOwner.class, new HorseOwnerStorage(), HorseOwner::new);
 		CapabilityManager.INSTANCE.register(IStoredHorse.class, new HorseStorage(), StoredHorse::new);
-
-		NetworkRegistry.INSTANCE.registerGuiHandler(CallableHorses.instance, new GuiHandler());
 	}
-
-	@EventHandler
-	public void postInit(FMLPostInitializationEvent e)
-	{
-	}
-
 }

@@ -1,10 +1,5 @@
 package tschipp.callablehorses.common.capabilities.storedhorse;
 
-import net.minecraft.entity.passive.AbstractHorse;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.world.World;
-
 public interface IStoredHorse {
 
 	public String getStorageUUID();
