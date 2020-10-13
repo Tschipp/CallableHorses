@@ -45,6 +45,7 @@ import tschipp.callablehorses.common.capabilities.storedhorse.IStoredHorse;
 import tschipp.callablehorses.common.helper.HorseHelper;
 import tschipp.callablehorses.common.worlddata.StoredHorsesWorldData;
 import tschipp.callablehorses.network.OwnerSyncShowStatsPacket;
+import tschipp.callablehorses.network.PlayWhistlePacket;
 
 public class HorseManager
 {
@@ -65,7 +66,8 @@ public class HorseManager
 				if (!canCallHorse(player))
 					return false;
 				Random rand = new Random();
-				player.world.playSound(null, player.getPosX(), player.getPosY(), player.getPosZ(), WhistleSounds.getRandomWhistle(), SoundCategory.PLAYERS, 1f, (float) (1.4 + rand.nextGaussian() / 3));
+				player.world.playSound(player, player.getPosition(), WhistleSounds.getRandomWhistle(), SoundCategory.PLAYERS, 1f, (float) (1.4 + rand.nextGaussian() / 3));
+				CallableHorses.network.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity)player), new PlayWhistlePacket());
 
 				AbstractHorseEntity e = findHorseWithStorageID(horseOwner.getStorageUUID(), player.world);
 				if (e != null)

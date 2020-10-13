@@ -2,11 +2,11 @@ package tschipp.callablehorses.network;
 
 import java.util.function.Supplier;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fml.network.NetworkEvent;
+import tschipp.callablehorses.CallableHorses;
 import tschipp.callablehorses.client.gui.GuiStatViewer;
 import tschipp.callablehorses.common.capabilities.horseowner.HorseOwnerProvider;
 import tschipp.callablehorses.common.capabilities.horseowner.IHorseOwner;
@@ -41,14 +41,14 @@ public class OwnerSyncShowStatsPacket
 		{
 			ctx.get().enqueueWork(() -> {
 
-				PlayerEntity player = Minecraft.getInstance().player;
+				PlayerEntity player = CallableHorses.proxy.getPlayer();
 
 				if (player != null)
 				{
 					IHorseOwner owner = HorseHelper.getOwnerCap(player);
 					HorseOwnerProvider.OWNER_CAPABILITY.getStorage().readNBT(HorseOwnerProvider.OWNER_CAPABILITY, owner, null, ownerNBT);
 
-					Minecraft.getInstance().displayGuiScreen(new GuiStatViewer(player));
+					CallableHorses.proxy.displayGui(new GuiStatViewer(player));
 				}
 
 			});

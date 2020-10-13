@@ -2,12 +2,12 @@ package tschipp.callablehorses.network;
 
 import java.util.function.Supplier;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.network.NetworkEvent;
+import tschipp.callablehorses.CallableHorses;
 import tschipp.callablehorses.common.capabilities.storedhorse.HorseProvider;
 import tschipp.callablehorses.common.capabilities.storedhorse.IStoredHorse;
 import tschipp.callablehorses.common.helper.HorseHelper;
@@ -45,7 +45,7 @@ public class HorseCapSyncPacket
 		{
 			ctx.get().enqueueWork(() -> {
 
-				World world = Minecraft.getInstance().world;
+				World world = CallableHorses.proxy.getWorld();
 
 				Entity e = world.getEntityByID(entityID);
 				if (e != null)
