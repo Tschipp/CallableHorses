@@ -9,5 +9,5 @@ public interface IProxy
 	
 	public PlayerEntity getPlayer();
 	
-	public void displayGui(Object gui);
+	public void displayStatViewer();
 }

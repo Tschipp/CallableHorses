@@ -57,7 +57,8 @@ public class CommonProxy implements IProxy
 	}
 
 	@Override
-	public void displayGui(Object gui)
+	public void displayStatViewer()
 	{		
 	}
+
 }

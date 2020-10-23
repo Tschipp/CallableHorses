@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import net.minecraft.block.BlockState;
-import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.attributes.Attributes;
@@ -26,7 +25,6 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
@@ -59,7 +57,7 @@ public class HorseManager
 			{
 				if (horseOwner.getHorseNBT().isEmpty())
 				{
-					player.sendStatusMessage(new StringTextComponent(TextFormatting.RED + I18n.format("callablehorses.error.nohorse")), true);
+					player.sendStatusMessage(new TranslationTextComponent("callablehorses.error.nohorse").mergeStyle(TextFormatting.RED), true);
 					return false;
 				}
 
@@ -129,7 +127,7 @@ public class HorseManager
 		{
 			if (player.getRidingEntity() == null)
 			{
-				player.sendStatusMessage(new StringTextComponent(TextFormatting.RED + I18n.format("callablehorses.error.notriding")), true);
+				player.sendStatusMessage(new TranslationTextComponent("callablehorses.error.notriding").mergeStyle(TextFormatting.RED), true);
 				return;
 			}
 

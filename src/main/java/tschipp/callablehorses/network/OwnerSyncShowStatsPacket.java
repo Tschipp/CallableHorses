@@ -7,7 +7,6 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fml.network.NetworkEvent;
 import tschipp.callablehorses.CallableHorses;
-import tschipp.callablehorses.client.gui.GuiStatViewer;
 import tschipp.callablehorses.common.capabilities.horseowner.HorseOwnerProvider;
 import tschipp.callablehorses.common.capabilities.horseowner.IHorseOwner;
 import tschipp.callablehorses.common.helper.HorseHelper;
@@ -48,7 +47,7 @@ public class OwnerSyncShowStatsPacket
 					IHorseOwner owner = HorseHelper.getOwnerCap(player);
 					HorseOwnerProvider.OWNER_CAPABILITY.getStorage().readNBT(HorseOwnerProvider.OWNER_CAPABILITY, owner, null, ownerNBT);
 
-					CallableHorses.proxy.displayGui(new GuiStatViewer(player));
+					CallableHorses.proxy.displayStatViewer();
 				}
 
 			});

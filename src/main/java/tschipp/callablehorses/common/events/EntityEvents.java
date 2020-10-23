@@ -1,6 +1,5 @@
 package tschipp.callablehorses.common.events;
 
-import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.passive.horse.AbstractHorseEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -10,6 +9,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
@@ -217,7 +217,7 @@ public class EntityEvents
 					if (Configs.SERVER.deathIsPermanent.get())
 					{
 						horseOwner.clearHorse();
-						owner.sendStatusMessage(new StringTextComponent(TextFormatting.RED + I18n.format("callablehorses.alert.death")), false);
+						owner.sendStatusMessage(new TranslationTextComponent("callablehorses.alert.death").mergeStyle(TextFormatting.RED), false);
 					}
 					else
 					{
@@ -263,7 +263,7 @@ public class EntityEvents
 					if (Configs.SERVER.deathIsPermanent.get())
 					{
 						owner.clearHorse();
-						player.sendStatusMessage(new StringTextComponent(TextFormatting.RED + I18n.format("callablehorses.alert.offlinedeath")), false);
+						player.sendStatusMessage(new TranslationTextComponent("callablehorses.alert.offlinedeath").mergeStyle(TextFormatting.RED), false);
 					}
 					else
 					{
