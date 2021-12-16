@@ -28,7 +28,7 @@ public class CallableHorses
 	public static CallableHorses instance;
 
 	public static final String MODID = "callablehorses";
-	public static final String VERSION = "1.1";
+	public static final String VERSION = "1.1.1";
 	public static final String NAME = "Callable Horses";
 	public static final String ACCEPTED_VERSIONS = "[1.12.2,1.13)";
 	public static final Logger LOGGER = LogManager.getFormatterLogger("CallableHorses");

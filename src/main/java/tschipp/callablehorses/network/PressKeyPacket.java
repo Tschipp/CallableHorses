@@ -1,5 +1,7 @@
 package tschipp.callablehorses.network;
 
+import java.util.Random;
+
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.IThreadListener;
@@ -8,15 +10,11 @@ import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
-import scala.util.Random;
 import tschipp.callablehorses.common.HorseManager;
 import tschipp.callablehorses.common.WhistleSounds;
 
 public class PressKeyPacket implements IMessage, IMessageHandler<PressKeyPacket, IMessage>
-{
-	private static Random rand = new Random();
-
-	
+{	
 	private int key;
 
 	public PressKeyPacket()

@@ -4,6 +4,7 @@ import static tschipp.callablehorses.common.config.CallableHorsesConfig.settings
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import javax.annotation.Nullable;
 
@@ -33,7 +34,6 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteract;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
-import scala.util.Random;
 import tschipp.callablehorses.CallableHorses;
 import tschipp.callablehorses.common.capabilities.horseowner.IHorseOwner;
 import tschipp.callablehorses.common.capabilities.storedhorse.IStoredHorse;
