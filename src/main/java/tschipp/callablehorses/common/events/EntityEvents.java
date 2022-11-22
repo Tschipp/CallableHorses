@@ -2,8 +2,7 @@ package tschipp.callablehorses.common.events;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -12,13 +11,13 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
-import net.minecraftforge.event.entity.EntityLeaveWorldEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingEvent.LivingUpdateEvent;
+import net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent.Clone;
-import net.minecraftforge.event.world.ChunkEvent;
+import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import tschipp.callablehorses.CallableHorses;
@@ -49,10 +48,10 @@ public class EntityEvents
 	// Remove horses with lower num when they are loaded
 	// Notify player of offline horse death
 	@SubscribeEvent
-	public static void onEntityJoinWorld(EntityJoinWorldEvent event)
+	public static void onEntityJoinWorld(EntityJoinLevelEvent event)
 	{
 		Entity joiningEntity = event.getEntity();
-		Level world = event.getWorld();
+		Level world = event.getLevel();
 		if (!world.isClientSide)
 		{
 			if(joiningEntity instanceof Player player)
@@ -71,7 +70,7 @@ public class EntityEvents
 						if (Configs.SERVER.deathIsPermanent.get())
 						{
 							owner.clearHorse();
-							player.displayClientMessage(new TranslatableComponent("callablehorses.alert.offlinedeath").withStyle(ChatFormatting.RED), false);
+							player.displayClientMessage(Component.translatable("callablehorses.alert.offlinedeath").withStyle(ChatFormatting.RED), false);
 						}
 						else
 						{
@@ -168,7 +167,7 @@ public class EntityEvents
 	public static void onClone(Clone event)
 	{
 		Player original = event.getOriginal();
-		Player newPlayer = event.getPlayer();
+		Player newPlayer = event.getEntity();
 
 		original.reviveCaps();
 		IHorseOwner oldHorse = HorseHelper.getOwnerCap(original);
@@ -208,9 +207,9 @@ public class EntityEvents
 
 	// Save Horse to player cap when it unloads
 	@SubscribeEvent
-	public static void onEntityLeaveWorld(EntityLeaveWorldEvent event)
+	public static void onEntityLeaveWorld(EntityLeaveLevelEvent event)
 	{
-		Level world = event.getWorld();
+		Level world = event.getLevel();
 		if (!world.isClientSide())
 		{
 			HorseManager.saveHorse(event.getEntity());
@@ -221,7 +220,7 @@ public class EntityEvents
 	@SubscribeEvent
 	public static void onStopTracking(PlayerEvent.StopTracking event)
 	{
-		Player player = event.getPlayer();
+		Player player = event.getEntity();
 		Level world = player.level;
 		Entity e = event.getTarget();
 
@@ -236,7 +235,7 @@ public class EntityEvents
 	@SubscribeEvent
 	public static void onStartTracking(PlayerEvent.StartTracking event)
 	{
-		Player player = event.getPlayer();
+		Player player = event.getEntity();
 		if (!player.level.isClientSide)
 		{
 			Entity target = event.getTarget();
@@ -249,17 +248,17 @@ public class EntityEvents
 
 	// Debug
 	@SubscribeEvent
-	public static void onLivingUpdate(LivingUpdateEvent event)
+	public static void onLivingUpdate(LivingTickEvent event)
 	{
 
-		Entity e = event.getEntityLiving();
+		Entity e = event.getEntity();
 		if (e instanceof AbstractHorse && !e.level.isClientSide)
 		{
 			if (Configs.SERVER.enableDebug.get() || Configs.SERVER.continuousAntiDupeChecking.get())
 			{
 				IStoredHorse horse = HorseHelper.getHorseCap(e);
 				if (Configs.SERVER.enableDebug.get())
-					e.setCustomName(new TextComponent("Is Owned: " + horse.isOwned() + ", Storage UUID: " + horse.getStorageUUID() + ", Horse Number: " + horse.getHorseNum() + ", Horse UUID: " + e.getUUID()));
+					e.setCustomName(Component.literal("Is Owned: " + horse.isOwned() + ", Storage UUID: " + horse.getStorageUUID() + ", Horse Number: " + horse.getHorseNum() + ", Horse UUID: " + e.getUUID()));
 
 				if (Configs.SERVER.continuousAntiDupeChecking.get())
 				{
@@ -294,7 +293,7 @@ public class EntityEvents
 					if (Configs.SERVER.deathIsPermanent.get())
 					{
 						horseOwner.clearHorse();
-						owner.displayClientMessage(new TranslatableComponent("callablehorses.alert.death").withStyle(ChatFormatting.RED), false);
+						owner.displayClientMessage(Component.translatable("callablehorses.alert.death").withStyle(ChatFormatting.RED), false);
 					}
 					else
 					{

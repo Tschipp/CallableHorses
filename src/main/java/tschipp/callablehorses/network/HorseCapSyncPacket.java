@@ -39,12 +39,12 @@ public class HorseCapSyncPacket
 		buf.writeNbt(horseNBT);
 	}
 
-	public void handle(Supplier<NetworkEvent.Context> ctx)
+	public void handle(Supplier<NetworkEvent.Context> context)
 	{
-		if (ctx.get().getDirection().getReceptionSide().isClient())
-		{
-			ctx.get().enqueueWork(() -> {
-
+		NetworkEvent.Context ctx = context.get();
+		ctx.enqueueWork(() -> {
+			if (ctx.getDirection().getReceptionSide().isClient())
+			{
 				Level world = CallableHorses.proxy.getWorld();
 
 				Entity e = world.getEntity(entityID);
@@ -53,9 +53,9 @@ public class HorseCapSyncPacket
 					IStoredHorse horse = HorseHelper.getHorseCap(e);
 					StoredHorse.readNBT(horse, horseNBT);
 				}
-
-			});
-		}
+			}
+		});
+		ctx.setPacketHandled(true);
 	}
 
 }

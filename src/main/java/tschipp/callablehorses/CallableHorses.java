@@ -38,7 +38,6 @@ public class CallableHorses
 		IEventBus eventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
 		eventBus.addListener(CommonProxy::setup);
-//		eventBus.addListener(ClientProxy::setup);
 
 		WhistleSounds.SOUND_EVENTS.register(eventBus);
 		HorseDropModifier.GLM.register(eventBus);

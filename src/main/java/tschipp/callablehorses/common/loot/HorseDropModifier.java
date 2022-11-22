@@ -1,29 +1,35 @@
 package tschipp.callablehorses.common.loot;
 
-import com.google.gson.JsonObject;
-import net.minecraft.resources.ResourceLocation;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
-import net.minecraftforge.common.loot.GlobalLootModifierSerializer;
+import net.minecraftforge.common.loot.IGlobalLootModifier;
 import net.minecraftforge.common.loot.LootModifier;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
+import org.jetbrains.annotations.NotNull;
 import tschipp.callablehorses.CallableHorses;
 import tschipp.callablehorses.common.capabilities.storedhorse.IStoredHorse;
 import tschipp.callablehorses.common.helper.HorseHelper;
 
-import java.util.List;
-
 public class HorseDropModifier extends LootModifier
 {
-	public static final DeferredRegister<GlobalLootModifierSerializer<?>> GLM = DeferredRegister.create(ForgeRegistries.Keys.LOOT_MODIFIER_SERIALIZERS, CallableHorses.MODID);
+	public static final Supplier<Codec<HorseDropModifier>> CODEC = Suppliers.memoize(() ->
+			RecordCodecBuilder.create(inst -> codecStart(inst).apply(inst, HorseDropModifier::new)));
 
-	public static final RegistryObject<Serializer> HORSE_DROP = GLM.register("horse_drop", HorseDropModifier.Serializer::new);
+	public static final DeferredRegister<Codec<? extends IGlobalLootModifier>> GLM = DeferredRegister.create(ForgeRegistries.Keys.GLOBAL_LOOT_MODIFIER_SERIALIZERS, CallableHorses.MODID);
+
+	public static final RegistryObject<Codec<? extends IGlobalLootModifier>> HORSE_DROP = GLM.register("horse_drop", HorseDropModifier.CODEC);
+
 
 	private LootItemCondition[] conditions;
 	
@@ -34,7 +40,7 @@ public class HorseDropModifier extends LootModifier
 	}
 
 	@Override
-	protected List<ItemStack> doApply(List<ItemStack> generatedLoot, LootContext context)
+	protected @NotNull ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context)
 	{
 		if (context.hasParam(LootContextParams.THIS_ENTITY))
 		{
@@ -53,19 +59,8 @@ public class HorseDropModifier extends LootModifier
 		return generatedLoot;
 	}
 
-	private static class Serializer extends GlobalLootModifierSerializer<HorseDropModifier>
-	{
-		@Override
-		public HorseDropModifier read(ResourceLocation location, JsonObject object, LootItemCondition[] ailootcondition)
-		{
-			return new HorseDropModifier(ailootcondition);
-		}
-
-		@Override
-		public JsonObject write(HorseDropModifier instance)
-		{
-			return this.makeConditions(instance.conditions);
-		}
+	@Override
+	public Codec<? extends IGlobalLootModifier> codec() {
+		return CODEC.get();
 	}
-
 }

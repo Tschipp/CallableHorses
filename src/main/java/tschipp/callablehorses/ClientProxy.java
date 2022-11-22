@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
@@ -15,9 +16,9 @@ import tschipp.callablehorses.client.keybinds.KeybindManager;
 public class ClientProxy implements IProxy
 {
 	@SubscribeEvent
-	public static void setup(FMLClientSetupEvent event)
+	public static void setupKeyMappings(RegisterKeyMappingsEvent event)
 	{
-		KeybindManager.init();
+		KeybindManager.registerKeyBinding(event);
 	}
 
 	@Override

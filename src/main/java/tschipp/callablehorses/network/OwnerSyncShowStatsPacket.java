@@ -34,12 +34,12 @@ public class OwnerSyncShowStatsPacket
 		buf.writeNbt(ownerNBT);
 	}
 
-	public void handle(Supplier<NetworkEvent.Context> ctx)
+	public void handle(Supplier<NetworkEvent.Context> context)
 	{
-		if (ctx.get().getDirection().getReceptionSide().isClient())
-		{
-			ctx.get().enqueueWork(() -> {
-
+		NetworkEvent.Context ctx = context.get();
+		ctx.enqueueWork(() -> {
+			if (ctx.getDirection().getReceptionSide().isClient())
+			{
 				Player player = CallableHorses.proxy.getPlayer();
 
 				if (player != null)
@@ -49,9 +49,9 @@ public class OwnerSyncShowStatsPacket
 
 					CallableHorses.proxy.displayStatViewer();
 				}
-
-			});
-		}
+			}
+		});
+		ctx.setPacketHandled(true);
 	}
 
 }
