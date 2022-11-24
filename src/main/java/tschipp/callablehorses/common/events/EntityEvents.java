@@ -175,6 +175,7 @@ public class EntityEvents
 		Player original = event.getOriginal();
 		Player newPlayer = event.getPlayer();
 
+		//TODO: FIx crash
 		IHorseOwner oldHorse = HorseHelper.getOwnerCap(original);
 		IHorseOwner newHorse = HorseHelper.getOwnerCap(newPlayer);
 
