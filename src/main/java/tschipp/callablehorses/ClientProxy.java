@@ -1,8 +1,8 @@
 package tschipp.callablehorses;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.world.World;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -21,13 +21,13 @@ public class ClientProxy implements IProxy
 	}
 
 	@Override
-	public World getWorld()
+	public Level getWorld()
 	{
-		return Minecraft.getInstance().world;
+		return Minecraft.getInstance().level;
 	}
 
 	@Override
-	public PlayerEntity getPlayer()
+	public Player getPlayer()
 	{
 		return Minecraft.getInstance().player;
 	}
@@ -35,7 +35,7 @@ public class ClientProxy implements IProxy
 	@Override
 	public void displayStatViewer()
 	{
-		Minecraft.getInstance().displayGuiScreen(new GuiStatViewer(Minecraft.getInstance().player));		
+		Minecraft.getInstance().setScreen(new GuiStatViewer(Minecraft.getInstance().player));		
 	}
 
 }

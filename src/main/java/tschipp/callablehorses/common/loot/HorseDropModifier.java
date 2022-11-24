@@ -1,32 +1,33 @@
 package tschipp.callablehorses.common.loot;
 
-import java.util.List;
-
 import com.google.gson.JsonObject;
-
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.passive.horse.AbstractHorseEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.loot.LootContext;
-import net.minecraft.loot.LootParameters;
-import net.minecraft.loot.conditions.ILootCondition;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.animal.horse.AbstractHorse;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 import net.minecraftforge.common.loot.GlobalLootModifierSerializer;
 import net.minecraftforge.common.loot.LootModifier;
-import net.minecraftforge.event.RegistryEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
 import tschipp.callablehorses.CallableHorses;
 import tschipp.callablehorses.common.capabilities.storedhorse.IStoredHorse;
 import tschipp.callablehorses.common.helper.HorseHelper;
 
-@EventBusSubscriber(modid = CallableHorses.MODID, bus = Bus.MOD)
+import java.util.List;
+
 public class HorseDropModifier extends LootModifier
 {
-	private ILootCondition[] conditions;
+	public static final DeferredRegister<GlobalLootModifierSerializer<?>> GLM = DeferredRegister.create(ForgeRegistries.Keys.LOOT_MODIFIER_SERIALIZERS, CallableHorses.MODID);
+
+	public static final RegistryObject<Serializer> HORSE_DROP = GLM.register("horse_drop", HorseDropModifier.Serializer::new);
+
+	private LootItemCondition[] conditions;
 	
-	protected HorseDropModifier(ILootCondition[] conditionsIn)
+	protected HorseDropModifier(LootItemCondition[] conditionsIn)
 	{
 		super(conditionsIn);
 		this.conditions = conditionsIn;
@@ -35,29 +36,27 @@ public class HorseDropModifier extends LootModifier
 	@Override
 	protected List<ItemStack> doApply(List<ItemStack> generatedLoot, LootContext context)
 	{
-		Entity entity = context.get(LootParameters.THIS_ENTITY);
-
-		if (entity instanceof AbstractHorseEntity)
+		if (context.hasParam(LootContextParams.THIS_ENTITY))
 		{
-			IStoredHorse horse = HorseHelper.getHorseCap(entity);
-			if (horse != null && horse.isOwned())
+			Entity entity = context.getParamOrNull(LootContextParams.THIS_ENTITY);
+
+			if (entity instanceof AbstractHorse)
 			{
-				generatedLoot.clear();
+				IStoredHorse horse = HorseHelper.getHorseCap(entity);
+				if (horse != null && horse.isOwned())
+				{
+					generatedLoot.clear();
+				}
 			}
 		}
-		return generatedLoot;
-	}
 
-	@SubscribeEvent
-	public static void registerModifierSerializers(RegistryEvent.Register<GlobalLootModifierSerializer<?>> event)
-	{
-		event.getRegistry().register(new HorseDropModifier.Serializer().setRegistryName(new ResourceLocation(CallableHorses.MODID, "horse_drop")));
+		return generatedLoot;
 	}
 
 	private static class Serializer extends GlobalLootModifierSerializer<HorseDropModifier>
 	{
 		@Override
-		public HorseDropModifier read(ResourceLocation location, JsonObject object, ILootCondition[] ailootcondition)
+		public HorseDropModifier read(ResourceLocation location, JsonObject object, LootItemCondition[] ailootcondition)
 		{
 			return new HorseDropModifier(ailootcondition);
 		}

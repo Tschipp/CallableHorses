@@ -2,9 +2,9 @@ package tschipp.callablehorses.network;
 
 import java.util.function.Supplier;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.network.NetworkEvent;
 import tschipp.callablehorses.common.HorseManager;
 
 public class PressKeyPacket
@@ -20,12 +20,12 @@ public class PressKeyPacket
 		this.key = key;
 	}
 
-	public PressKeyPacket(PacketBuffer buf)
+	public PressKeyPacket(FriendlyByteBuf buf)
 	{
 		this.key = buf.readInt();
 	}
 
-	public void toBytes(PacketBuffer buf)
+	public void toBytes(FriendlyByteBuf buf)
 	{
 		buf.writeInt(key);
 	}
@@ -36,7 +36,7 @@ public class PressKeyPacket
 		{
 			ctx.get().enqueueWork(() -> {
 
-				ServerPlayerEntity player = ctx.get().getSender();
+				ServerPlayer player = ctx.get().getSender();
 
 				if (player != null)
 				{

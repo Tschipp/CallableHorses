@@ -5,72 +5,68 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.world.server.ServerWorld;
-import net.minecraft.world.storage.DimensionSavedDataManager;
-import net.minecraft.world.storage.WorldSavedData;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.DimensionDataStorage;
+import net.minecraft.world.level.saveddata.SavedData;
 import tschipp.callablehorses.CallableHorses;
 
-public class StoredHorsesWorldData extends WorldSavedData
+public class StoredHorsesWorldData extends SavedData
 {
 	private static String name = CallableHorses.MODID + "_stored_horses";
 
 	private Map<String, Integer> entries = new HashMap<String, Integer>();
 	private List<String> killedHorses = new ArrayList<String>();
 	private List<String> disbandedHorses = new ArrayList<String>();
-	private Map<String, CompoundNBT> offlineSavedHorses = new HashMap<String, CompoundNBT>();
+	private Map<String, CompoundTag> offlineSavedHorses = new HashMap<String, CompoundTag>();
 
 	private int i = 0;
 
 	public StoredHorsesWorldData()
 	{
-		super(name);
+
 	}
 
-	public StoredHorsesWorldData(String name)
+	public static StoredHorsesWorldData load(CompoundTag nbt)
 	{
-		super(name);
-	}
-
-	@Override
-	public void read(CompoundNBT nbt)
-	{
+		StoredHorsesWorldData data = new StoredHorsesWorldData();
 		int i = 0;
 		while (nbt.contains("" + i))
 		{
-			CompoundNBT subTag = nbt.getCompound("" + i);
+			CompoundTag subTag = nbt.getCompound("" + i);
 			String storageID = subTag.getString("id");
 			int num = subTag.getInt("num");
 
-			entries.put(storageID, num);
+			data.entries.put(storageID, num);
 
 			i++;
 		}
 
 		i = 0;
-		CompoundNBT killed = nbt.getCompound("killed");
+		CompoundTag killed = nbt.getCompound("killed");
 		while (killed.contains("" + i))
 		{
-			killedHorses.add(killed.getCompound("" + i).getString("id"));
+			data.killedHorses.add(killed.getCompound("" + i).getString("id"));
 			i++;
 		}
 
 		i = 0;
-		CompoundNBT disbanded = nbt.getCompound("disbanded");
+		CompoundTag disbanded = nbt.getCompound("disbanded");
 		while (disbanded.contains("" + i))
 		{
-			disbandedHorses.add(disbanded.getCompound("" + i).getString("id"));
+			data.disbandedHorses.add(disbanded.getCompound("" + i).getString("id"));
 			i++;
 		}
-
+		return data;
 	}
 
 	@Override
-	public CompoundNBT write(CompoundNBT compound)
+	public CompoundTag save(CompoundTag compound)
 	{
-		CompoundNBT tag = new CompoundNBT();
+		CompoundTag tag = new CompoundTag();
 		entries.forEach((storageID, num) -> {
-			CompoundNBT subTag = new CompoundNBT();
+			CompoundTag subTag = new CompoundTag();
 			subTag.putString("id", storageID);
 			subTag.putInt("num", num);
 			tag.put("" + i, subTag);
@@ -79,19 +75,19 @@ public class StoredHorsesWorldData extends WorldSavedData
 
 		i = 0;
 
-		CompoundNBT killed = new CompoundNBT();
+		CompoundTag killed = new CompoundTag();
 		for (int k = 0; k < killedHorses.size(); k++)
 		{
-			CompoundNBT subTag = new CompoundNBT();
+			CompoundTag subTag = new CompoundTag();
 			subTag.putString("id", killedHorses.get(k));
 			killed.put("" + k, subTag);
 		}
 		tag.put("killed", killed);
 
-		CompoundNBT disbanded = new CompoundNBT();
+		CompoundTag disbanded = new CompoundTag();
 		for (int k = 0; k < disbandedHorses.size(); k++)
 		{
-			CompoundNBT subTag = new CompoundNBT();
+			CompoundTag subTag = new CompoundTag();
 			subTag.putString("id", disbandedHorses.get(k));
 			disbanded.put("" + k, subTag);
 		}
@@ -103,7 +99,7 @@ public class StoredHorsesWorldData extends WorldSavedData
 	public void addHorseNum(String id, int num)
 	{
 		entries.put(id, num);
-		this.markDirty();
+		this.setDirty();
 	}
 
 	public int getHorseNum(String id)
@@ -117,7 +113,7 @@ public class StoredHorsesWorldData extends WorldSavedData
 	public void disbandHorse(String id)
 	{
 		disbandedHorses.add(id);
-		this.markDirty();
+		this.setDirty();
 	}
 
 	public boolean isDisbanded(String id)
@@ -128,13 +124,13 @@ public class StoredHorsesWorldData extends WorldSavedData
 	public void clearDisbanded(String id)
 	{
 		disbandedHorses.remove(id);
-		this.markDirty();
+		this.setDirty();
 	}
 
 	public void markKilled(String id)
 	{
 		killedHorses.add(id);
-		this.markDirty();
+		this.setDirty();
 	}
 
 	public boolean wasKilled(String id)
@@ -146,13 +142,13 @@ public class StoredHorsesWorldData extends WorldSavedData
 	public void clearKilled(String id)
 	{
 		killedHorses.remove(id);
-		this.markDirty();
+		this.setDirty();
 	}
 
-	public void addOfflineSavedHorse(String id, CompoundNBT nbt)
+	public void addOfflineSavedHorse(String id, CompoundTag nbt)
 	{
 		offlineSavedHorses.put(id, nbt);
-		this.markDirty();
+		this.setDirty();
 	}
 
 	public boolean wasOfflineSaved(String id)
@@ -160,7 +156,7 @@ public class StoredHorsesWorldData extends WorldSavedData
 		return offlineSavedHorses.containsKey(id);
 	}
 
-	public CompoundNBT getOfflineSavedHorse(String id)
+	public CompoundTag getOfflineSavedHorse(String id)
 	{
 		return offlineSavedHorses.get(id);
 	}
@@ -168,16 +164,16 @@ public class StoredHorsesWorldData extends WorldSavedData
 	public void clearOfflineSavedHorse(String id)
 	{
 		offlineSavedHorses.remove(id);
-		this.markDirty();
+		this.setDirty();
 	}
 
-	public static StoredHorsesWorldData getInstance(ServerWorld world)
+	public static StoredHorsesWorldData getInstance(Level level)
 	{
-		DimensionSavedDataManager storage = world.getSavedData();
-		StoredHorsesWorldData instance = (StoredHorsesWorldData) storage.getOrCreate(StoredHorsesWorldData::new, name);
-		
-		storage.set(instance);
+		if (!(level instanceof ServerLevel)) {
+			throw new RuntimeException("Attempted to get the data from a client world. This is wrong.");
+		}
 
-		return instance;
+		DimensionDataStorage storage = ((ServerLevel) level).getDataStorage();
+		return storage.computeIfAbsent(StoredHorsesWorldData::load, StoredHorsesWorldData::new, name);
 	}
 }

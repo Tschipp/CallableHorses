@@ -3,10 +3,10 @@ package tschipp.callablehorses.network;
 import java.util.Random;
 import java.util.function.Supplier;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.SoundCategory;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.sounds.SoundSource;
+import net.minecraftforge.network.NetworkEvent;
 import tschipp.callablehorses.CallableHorses;
 import tschipp.callablehorses.common.WhistleSounds;
 
@@ -16,11 +16,11 @@ public class PlayWhistlePacket
 	{
 	}
 
-	public PlayWhistlePacket(PacketBuffer buf)
+	public PlayWhistlePacket(FriendlyByteBuf buf)
 	{
 	}
 
-	public void toBytes(PacketBuffer buf)
+	public void toBytes(FriendlyByteBuf buf)
 	{
 	}
 
@@ -30,12 +30,12 @@ public class PlayWhistlePacket
 		{
 			ctx.get().enqueueWork(() -> {
 
-				PlayerEntity player = CallableHorses.proxy.getPlayer();
+				Player player = CallableHorses.proxy.getPlayer();
 
 				if (player != null)
 				{
 					Random rand = new Random();
-					player.world.playSound(player, player.getPosition(), WhistleSounds.getRandomWhistle(), SoundCategory.PLAYERS, 1f, (float) (1.4 + rand.nextGaussian() / 3));
+					player.level.playSound(player, player.blockPosition(), WhistleSounds.WHISTLE.get(), SoundSource.PLAYERS, 1f, (float) (1.4 + rand.nextGaussian() / 3));
 				}
 
 			});

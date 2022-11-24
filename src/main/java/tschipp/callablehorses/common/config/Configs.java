@@ -1,6 +1,5 @@
 package tschipp.callablehorses.common.config;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -55,7 +54,7 @@ public class Configs {
 			
 			callableDimsWhitelist = builder
 					.comment("Whitelist for dimensions where horses can be called. callableInEveryDimension needs to be false!")
-					.defineList("callableDimsWhitelist", Collections.singletonList("minecraft:overworld"), obj -> {
+					.defineList("callableDimsWhitelist", List.of("minecraft:overworld"), obj -> {
 						return obj instanceof String;
 					});
 			

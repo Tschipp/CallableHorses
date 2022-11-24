@@ -1,22 +1,21 @@
 package tschipp.callablehorses.common.capabilities.horseowner;
 
-import net.minecraft.entity.passive.horse.AbstractHorseEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.RegistryKey;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.world.World;
+import net.minecraft.world.entity.animal.horse.AbstractHorse;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.Level;
 
 public interface IHorseOwner {
 
-	public AbstractHorseEntity createHorseEntity(World world);
+	public AbstractHorse createHorseEntity(Level world);
 	
-	public CompoundNBT getHorseNBT();
+	public CompoundTag getHorseNBT();
 	
-	public void setHorseNBT(CompoundNBT nbt);
+	public void setHorseNBT(CompoundTag nbt);
 
-	public void setHorse(AbstractHorseEntity horse, PlayerEntity player);
+	public void setHorse(AbstractHorse horse, Player player);
 	
 	public void clearHorse();
 	
@@ -28,12 +27,12 @@ public interface IHorseOwner {
 	
 	public void setStorageUUID(String id);
 
-	public void setLastSeenPosition(Vector3d pos);
+	public void setLastSeenPosition(Vec3 pos);
 	
-	public Vector3d getLastSeenPosition();
+	public Vec3 getLastSeenPosition();
 	
-	public RegistryKey<World> getLastSeenDim();
+	public ResourceKey<Level> getLastSeenDim();
 	
-	public void setLastSeenDim(RegistryKey<World> dim);
+	public void setLastSeenDim(ResourceKey<Level> dim);
 
 }

@@ -1,13 +1,13 @@
 package tschipp.callablehorses;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.world.World;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 
 public interface IProxy
 {
-	public World getWorld();
+	public Level getWorld();
 	
-	public PlayerEntity getPlayer();
+	public Player getPlayer();
 	
 	public void displayStatViewer();
 }

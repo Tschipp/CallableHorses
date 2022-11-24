@@ -1,22 +1,19 @@
 package tschipp.callablehorses.common.events;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.passive.horse.AbstractHorseEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ClassInheritanceMultiMap;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.IWorld;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.IChunk;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.animal.horse.AbstractHorse;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import net.minecraftforge.event.entity.EntityLeaveWorldEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingEvent.LivingUpdateEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -26,10 +23,10 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import tschipp.callablehorses.CallableHorses;
 import tschipp.callablehorses.common.HorseManager;
-import tschipp.callablehorses.common.capabilities.horseowner.HorseOwnerProvider;
+import tschipp.callablehorses.common.capabilities.horseowner.HorseOwner;
 import tschipp.callablehorses.common.capabilities.horseowner.IHorseOwner;
-import tschipp.callablehorses.common.capabilities.storedhorse.HorseProvider;
 import tschipp.callablehorses.common.capabilities.storedhorse.IStoredHorse;
+import tschipp.callablehorses.common.capabilities.storedhorse.StoredHorse;
 import tschipp.callablehorses.common.config.Configs;
 import tschipp.callablehorses.common.helper.HorseHelper;
 import tschipp.callablehorses.common.worlddata.StoredHorsesWorldData;
@@ -41,61 +38,133 @@ public class EntityEvents
 	@SubscribeEvent
 	public static void onAttachCaps(AttachCapabilitiesEvent<Entity> event)
 	{
-		if (event.getObject() instanceof PlayerEntity)
-			event.addCapability(new ResourceLocation(CallableHorses.MODID, "horse_owner"), new HorseOwnerProvider());
+		if (event.getObject() instanceof Player)
+			event.addCapability(new ResourceLocation(CallableHorses.MODID, "horse_owner"), new HorseOwner());
 
-		if (event.getObject() instanceof AbstractHorseEntity)
-			event.addCapability(new ResourceLocation(CallableHorses.MODID, "stored_horse"), new HorseProvider());
+		if (event.getObject() instanceof AbstractHorse)
+			event.addCapability(new ResourceLocation(CallableHorses.MODID, "stored_horse"), new StoredHorse());
 
+	}
+
+	// Remove horses with lower num when they are loaded
+	// Notify player of offline horse death
+	@SubscribeEvent
+	public static void onEntityJoinWorld(EntityJoinWorldEvent event)
+	{
+		Entity joiningEntity = event.getEntity();
+		Level world = event.getWorld();
+		if (!world.isClientSide)
+		{
+			if(joiningEntity instanceof Player player)
+			{
+				IHorseOwner owner = HorseHelper.getOwnerCap(player);
+
+				String ownedHorse = owner.getStorageUUID();
+
+				if (!ownedHorse.isEmpty())
+				{
+					StoredHorsesWorldData data = HorseHelper.getWorldData((ServerLevel) world);
+					if (data.wasKilled(ownedHorse))
+					{
+						data.clearKilled(ownedHorse);
+
+						if (Configs.SERVER.deathIsPermanent.get())
+						{
+							owner.clearHorse();
+							player.displayClientMessage(new TranslatableComponent("callablehorses.alert.offlinedeath").withStyle(ChatFormatting.RED), false);
+						}
+						else
+						{
+							AbstractHorse deadHorse = owner.createHorseEntity(world);
+							HorseManager.prepDeadHorseForRespawning(deadHorse);
+							owner.setHorseNBT(deadHorse.serializeNBT());
+							owner.setLastSeenPosition(Vec3.ZERO);
+						}
+					}
+
+					if (data.wasOfflineSaved(ownedHorse))
+					{
+						CompoundTag newNBT = data.getOfflineSavedHorse(ownedHorse);
+						owner.setHorseNBT(newNBT);
+						data.clearOfflineSavedHorse(ownedHorse);
+					}
+				}
+			}
+			else if (joiningEntity instanceof AbstractHorse)
+			{
+				IStoredHorse horse = HorseHelper.getHorseCap(joiningEntity);
+				if (horse.isOwned())
+				{
+					StoredHorsesWorldData data = HorseHelper.getWorldData((ServerLevel) world);
+					if (data.isDisbanded(horse.getStorageUUID()))
+					{
+						HorseManager.clearHorse(horse);
+						data.clearDisbanded(horse.getStorageUUID());
+
+					}
+					else
+					{
+						int globalNum = HorseHelper.getHorseNum((ServerLevel) joiningEntity.level, horse.getStorageUUID());
+						if (globalNum > horse.getHorseNum())
+						{
+//										e.setPosition(e.getPosX(), -200, e.getPosZ());
+							event.setCanceled(true);
+							CallableHorses.LOGGER.debug(joiningEntity + " was instantly despawned because its number is " + horse.getHorseNum() + " and the global num is " + globalNum);
+						}
+					}
+
+				}
+			}
+		}
 	}
 
 	// Remove horses with lower num when they are loaded
 	@SubscribeEvent
 	public static void onChunkLoad(ChunkEvent.Load event)
 	{
-		IWorld world = event.getWorld();
-		if (!world.isRemote())
-		{
-
-			IChunk chk = event.getChunk();
-
-			if (chk instanceof Chunk)
-			{
-				ClassInheritanceMultiMap<Entity>[] entitylists = ((Chunk) chk).getEntityLists();
-
-				for (ClassInheritanceMultiMap<Entity> list : entitylists)
-				{
-					for (Entity e : list)
-					{
-						if (e instanceof AbstractHorseEntity)
-						{
-							IStoredHorse horse = HorseHelper.getHorseCap(e);
-							if (horse.isOwned())
-							{
-								StoredHorsesWorldData data = HorseHelper.getWorldData((ServerWorld) world);
-								if (data.isDisbanded(horse.getStorageUUID()))
-								{
-									HorseManager.clearHorse(horse);
-									data.clearDisbanded(horse.getStorageUUID());
-
-								}
-								else
-								{
-									int globalNum = HorseHelper.getHorseNum((ServerWorld) e.world, horse.getStorageUUID());
-									if (globalNum > horse.getHorseNum())
-									{
-//										e.setPosition(e.getPosX(), -200, e.getPosZ());
-										e.remove();
-										CallableHorses.LOGGER.debug(e + " was instantly despawned because its number is " + horse.getHorseNum() + " and the global num is " + globalNum);
-									}
-								}
-
-							}
-						}
-					}
-				}
-			}
-		}
+//		LevelAccessor world = event.getWorld();
+//		if (!world.isClientSide())
+//		{
+//
+//			ChunkAccess chk = event.getChunk();
+//
+//			if (chk instanceof LevelChunk)
+//			{
+//				ClassInstanceMultiMap<Entity>[] entitylists = ((LevelChunk) chk).getEntitySections();
+//
+//				for (ClassInstanceMultiMap<Entity> list : entitylists)
+//				{
+//					for (Entity e : list)
+//					{
+//						if (e instanceof AbstractHorse)
+//						{
+//							IStoredHorse horse = HorseHelper.getHorseCap(e);
+//							if (horse.isOwned())
+//							{
+//								StoredHorsesWorldData data = HorseHelper.getWorldData((ServerLevel) world);
+//								if (data.isDisbanded(horse.getStorageUUID()))
+//								{
+//									HorseManager.clearHorse(horse);
+//									data.clearDisbanded(horse.getStorageUUID());
+//
+//								}
+//								else
+//								{
+//									int globalNum = HorseHelper.getHorseNum((ServerLevel) e.level, horse.getStorageUUID());
+//									if (globalNum > horse.getHorseNum())
+//									{
+////										e.setPosition(e.getPosX(), -200, e.getPosZ());
+//										e.discard();
+//										CallableHorses.LOGGER.debug(e + " was instantly despawned because its number is " + horse.getHorseNum() + " and the global num is " + globalNum);
+//									}
+//								}
+//
+//							}
+//						}
+//					}
+//				}
+//			}
+//		}
 
 	}
 
@@ -103,8 +172,8 @@ public class EntityEvents
 	@SubscribeEvent
 	public static void onClone(Clone event)
 	{
-		PlayerEntity original = event.getOriginal();
-		PlayerEntity newPlayer = event.getPlayer();
+		Player original = event.getOriginal();
+		Player newPlayer = event.getPlayer();
 
 		IHorseOwner oldHorse = HorseHelper.getOwnerCap(original);
 		IHorseOwner newHorse = HorseHelper.getOwnerCap(newPlayer);
@@ -119,36 +188,47 @@ public class EntityEvents
 	@SubscribeEvent
 	public static void onChunkUnload(ChunkEvent.Unload event)
 	{
-		IWorld world = event.getWorld();
-		if (!world.isRemote())
+//		LevelAccessor world = event.getWorld();
+//		if (!world.isClientSide())
+//		{
+//			ChunkAccess chk = event.getChunk();
+//
+//			if (chk instanceof LevelChunk)
+//			{
+//				ClassInstanceMultiMap<Entity>[] entitylists = ((LevelChunk) chk).getEntitySections();
+//
+//				for (ClassInstanceMultiMap<Entity> list : entitylists)
+//				{
+//					for (Entity e : list)
+//					{
+//						HorseManager.saveHorse(e);
+//					}
+//				}
+//			}
+//		}
+
+	}
+
+	// Save Horse to player cap when it unloads
+	@SubscribeEvent
+	public static void onEntityLeaveWorld(EntityLeaveWorldEvent event)
+	{
+		Level world = event.getWorld();
+		if (!world.isClientSide())
 		{
-			IChunk chk = event.getChunk();
-
-			if (chk instanceof Chunk)
-			{
-				ClassInheritanceMultiMap<Entity>[] entitylists = ((Chunk) chk).getEntityLists();
-
-				for (ClassInheritanceMultiMap<Entity> list : entitylists)
-				{
-					for (Entity e : list)
-					{
-						HorseManager.saveHorse(e);
-					}
-				}
-			}
+			HorseManager.saveHorse(event.getEntity());
 		}
-
 	}
 
 	// Save Horse to player cap when it unloads
 	@SubscribeEvent
 	public static void onStopTracking(PlayerEvent.StopTracking event)
 	{
-		PlayerEntity player = event.getPlayer();
-		World world = player.world;
+		Player player = event.getPlayer();
+		Level world = player.level;
 		Entity e = event.getTarget();
 
-		if (!world.isRemote && e.isAlive())
+		if (!world.isClientSide && e.isAlive())
 		{
 			HorseManager.saveHorse(e);
 		}
@@ -159,11 +239,11 @@ public class EntityEvents
 	@SubscribeEvent
 	public static void onStartTracking(PlayerEvent.StartTracking event)
 	{
-		PlayerEntity player = event.getPlayer();
-		if (!player.world.isRemote)
+		Player player = event.getPlayer();
+		if (!player.level.isClientSide)
 		{
 			Entity target = event.getTarget();
-			if (target instanceof AbstractHorseEntity)
+			if (target instanceof AbstractHorse)
 			{
 				HorseHelper.sendHorseUpdateToClient(target, player);
 			}
@@ -176,22 +256,22 @@ public class EntityEvents
 	{
 
 		Entity e = event.getEntityLiving();
-		if (e instanceof AbstractHorseEntity && !e.world.isRemote)
+		if (e instanceof AbstractHorse && !e.level.isClientSide)
 		{
 			if (Configs.SERVER.enableDebug.get() || Configs.SERVER.continuousAntiDupeChecking.get())
 			{
 				IStoredHorse horse = HorseHelper.getHorseCap(e);
 				if (Configs.SERVER.enableDebug.get())
-					e.setCustomName(new StringTextComponent("Is Owned: " + horse.isOwned() + ", Storage UUID: " + horse.getStorageUUID() + ", Horse Number: " + horse.getHorseNum() + ", Horse UUID: " + e.getUniqueID()));
+					e.setCustomName(new TextComponent("Is Owned: " + horse.isOwned() + ", Storage UUID: " + horse.getStorageUUID() + ", Horse Number: " + horse.getHorseNum() + ", Horse UUID: " + e.getUUID()));
 
 				if (Configs.SERVER.continuousAntiDupeChecking.get())
 				{
 					int thisNum = horse.getHorseNum();
-					int globalNum = HorseHelper.getHorseNum((ServerWorld) e.world, horse.getStorageUUID());
+					int globalNum = HorseHelper.getHorseNum((ServerLevel) e.level, horse.getStorageUUID());
 					if (globalNum > thisNum)
 					{
 //						e.setPosition(e.getPosX(), -200, e.getPosZ());
-						e.remove();
+						e.discard();
 					}
 				}
 
@@ -205,80 +285,36 @@ public class EntityEvents
 	{
 		Entity e = event.getEntity();
 
-		if (!e.world.isRemote && e instanceof AbstractHorseEntity)
+		if (!e.level.isClientSide && e instanceof AbstractHorse)
 		{
 			IStoredHorse horse = HorseHelper.getHorseCap(e);
 			if (horse.isOwned())
 			{
-				PlayerEntity owner = HorseHelper.getPlayerFromUUID(horse.getOwnerUUID(), e.world);
+				Player owner = HorseHelper.getPlayerFromUUID(horse.getOwnerUUID(), e.level);
 				if (owner != null)
 				{
 					IHorseOwner horseOwner = HorseHelper.getOwnerCap(owner);
 					if (Configs.SERVER.deathIsPermanent.get())
 					{
 						horseOwner.clearHorse();
-						owner.sendStatusMessage(new TranslationTextComponent("callablehorses.alert.death").mergeStyle(TextFormatting.RED), false);
+						owner.displayClientMessage(new TranslatableComponent("callablehorses.alert.death").withStyle(ChatFormatting.RED), false);
 					}
 					else
 					{
 						HorseManager.saveHorse(e);
-						AbstractHorseEntity deadHorse = horseOwner.createHorseEntity(owner.world);
+						AbstractHorse deadHorse = horseOwner.createHorseEntity(owner.level);
 						HorseManager.prepDeadHorseForRespawning(deadHorse);
 						horseOwner.setHorseNBT(deadHorse.serializeNBT());
-						horseOwner.setLastSeenPosition(Vector3d.ZERO);
+						horseOwner.setLastSeenPosition(Vec3.ZERO);
 					}
 
 				}
 				else
 				{
 					CallableHorses.LOGGER.debug(e + " was marked as killed.");
-					e.world.getServer().getWorlds().forEach(serverworld -> {
+					e.level.getServer().getAllLevels().forEach(serverworld -> {
 						HorseHelper.getWorldData(serverworld).markKilled(horse.getStorageUUID());
 					});
-				}
-			}
-		}
-	}
-
-	// Notify player of offline horse death
-	@SubscribeEvent
-	public static void onJoinWorld(EntityJoinWorldEvent event)
-	{
-		Entity joiningEntity = event.getEntity();
-		World world = event.getWorld();
-		if (!world.isRemote && joiningEntity instanceof PlayerEntity)
-		{
-			PlayerEntity player = (PlayerEntity) joiningEntity;
-			IHorseOwner owner = HorseHelper.getOwnerCap(player);
-
-			String ownedHorse = owner.getStorageUUID();
-
-			if (!ownedHorse.isEmpty())
-			{
-				StoredHorsesWorldData data = HorseHelper.getWorldData((ServerWorld) world);
-				if (data.wasKilled(ownedHorse))
-				{
-					data.clearKilled(ownedHorse);
-
-					if (Configs.SERVER.deathIsPermanent.get())
-					{
-						owner.clearHorse();
-						player.sendStatusMessage(new TranslationTextComponent("callablehorses.alert.offlinedeath").mergeStyle(TextFormatting.RED), false);
-					}
-					else
-					{
-						AbstractHorseEntity deadHorse = owner.createHorseEntity(world);
-						HorseManager.prepDeadHorseForRespawning(deadHorse);
-						owner.setHorseNBT(deadHorse.serializeNBT());
-						owner.setLastSeenPosition(Vector3d.ZERO);
-					}
-				}
-
-				if (data.wasOfflineSaved(ownedHorse))
-				{
-					CompoundNBT newNBT = data.getOfflineSavedHorse(ownedHorse);
-					owner.setHorseNBT(newNBT);
-					data.clearOfflineSavedHorse(ownedHorse);
 				}
 			}
 		}

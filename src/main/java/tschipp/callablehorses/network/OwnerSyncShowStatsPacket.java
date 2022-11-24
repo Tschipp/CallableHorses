@@ -1,19 +1,19 @@
 package tschipp.callablehorses.network;
 
-import java.util.function.Supplier;
-
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.network.NetworkEvent;
 import tschipp.callablehorses.CallableHorses;
-import tschipp.callablehorses.common.capabilities.horseowner.HorseOwnerProvider;
+import tschipp.callablehorses.common.capabilities.horseowner.HorseOwner;
 import tschipp.callablehorses.common.capabilities.horseowner.IHorseOwner;
 import tschipp.callablehorses.common.helper.HorseHelper;
 
+import java.util.function.Supplier;
+
 public class OwnerSyncShowStatsPacket
 {
-	private CompoundNBT ownerNBT = null;
+	private CompoundTag ownerNBT = null;
 
 	public OwnerSyncShowStatsPacket()
 	{
@@ -21,17 +21,17 @@ public class OwnerSyncShowStatsPacket
 
 	public OwnerSyncShowStatsPacket(IHorseOwner owner)
 	{
-		this.ownerNBT = (CompoundNBT) HorseOwnerProvider.OWNER_CAPABILITY.getStorage().writeNBT(HorseOwnerProvider.OWNER_CAPABILITY, owner, null);
+		this.ownerNBT = (CompoundTag) HorseOwner.writeNBT(owner);
 	}
 
-	public OwnerSyncShowStatsPacket(PacketBuffer buf)
+	public OwnerSyncShowStatsPacket(FriendlyByteBuf buf)
 	{
-		this.ownerNBT = buf.readCompoundTag();
+		this.ownerNBT = buf.readNbt();
 	}
 
-	public void toBytes(PacketBuffer buf)
+	public void toBytes(FriendlyByteBuf buf)
 	{
-		buf.writeCompoundTag(ownerNBT);
+		buf.writeNbt(ownerNBT);
 	}
 
 	public void handle(Supplier<NetworkEvent.Context> ctx)
@@ -40,12 +40,12 @@ public class OwnerSyncShowStatsPacket
 		{
 			ctx.get().enqueueWork(() -> {
 
-				PlayerEntity player = CallableHorses.proxy.getPlayer();
+				Player player = CallableHorses.proxy.getPlayer();
 
 				if (player != null)
 				{
 					IHorseOwner owner = HorseHelper.getOwnerCap(player);
-					HorseOwnerProvider.OWNER_CAPABILITY.getStorage().readNBT(HorseOwnerProvider.OWNER_CAPABILITY, owner, null, ownerNBT);
+					HorseOwner.readNBT(owner, ownerNBT);
 
 					CallableHorses.proxy.displayStatViewer();
 				}

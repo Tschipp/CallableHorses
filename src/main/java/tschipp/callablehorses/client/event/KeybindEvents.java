@@ -1,6 +1,6 @@
 package tschipp.callablehorses.client.event;
 
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
@@ -22,13 +22,13 @@ public class KeybindEvents
 	@OnlyIn(Dist.CLIENT)
 	public static void onPlayerTick(PlayerTickEvent event)
 	{
-		PlayerEntity player = event.player;
+		Player player = event.player;
 
 		if (player != null && event.side == LogicalSide.CLIENT)
 		{
-			boolean callHorse = KeybindManager.callHorse.isKeyDown();
-			boolean setHorse = KeybindManager.setHorse.isKeyDown();
-			boolean showStats = Configs.SERVER.enableStatsViewer.get() ? KeybindManager.showStats.isKeyDown() : false;
+			boolean callHorse = KeybindManager.callHorse.isDown();
+			boolean setHorse = KeybindManager.setHorse.isDown();
+			boolean showStats = Configs.SERVER.enableStatsViewer.get() ? KeybindManager.showStats.isDown() : false;
 
 			if (callHorse)
 			{

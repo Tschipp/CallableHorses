@@ -5,38 +5,38 @@ import static tschipp.callablehorses.common.config.Configs.SERVER;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ai.attributes.Attributes;
-import net.minecraft.entity.passive.horse.AbstractChestedHorseEntity;
-import net.minecraft.entity.passive.horse.AbstractHorseEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.nbt.CompoundNBT;
+import com.google.common.collect.ImmutableList;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.animal.horse.AbstractChestedHorse;
+import net.minecraft.world.entity.animal.horse.AbstractHorse;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.Hand;
-import net.minecraft.util.RegistryKey;
-import net.minecraft.util.SoundCategory;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.shapes.VoxelShapes;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.world.level.Level;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteract;
-import net.minecraftforge.fml.network.PacketDistributor;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.network.PacketDistributor;
 import tschipp.callablehorses.CallableHorses;
 import tschipp.callablehorses.common.capabilities.horseowner.IHorseOwner;
 import tschipp.callablehorses.common.capabilities.storedhorse.IStoredHorse;
@@ -48,7 +48,7 @@ import tschipp.callablehorses.network.PlayWhistlePacket;
 public class HorseManager
 {
 
-	public static boolean callHorse(PlayerEntity player)
+	public static boolean callHorse(Player player)
 	{
 		if (player != null)
 		{
@@ -57,36 +57,36 @@ public class HorseManager
 			{
 				if (horseOwner.getHorseNBT().isEmpty())
 				{
-					player.sendStatusMessage(new TranslationTextComponent("callablehorses.error.nohorse").mergeStyle(TextFormatting.RED), true);
+					player.displayClientMessage(new TranslatableComponent("callablehorses.error.nohorse").withStyle(ChatFormatting.RED), true);
 					return false;
 				}
 
 				if (!canCallHorse(player))
 					return false;
 				Random rand = new Random();
-				player.world.playSound(player, player.getPosition(), WhistleSounds.getRandomWhistle(), SoundCategory.PLAYERS, 1f, (float) (1.4 + rand.nextGaussian() / 3));
-				CallableHorses.network.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity)player), new PlayWhistlePacket());
+				player.level.playSound(player, player.blockPosition(), WhistleSounds.WHISTLE.get(), SoundSource.PLAYERS, 1f, (float) (1.4 + rand.nextGaussian() / 3));
+				CallableHorses.network.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer)player), new PlayWhistlePacket());
 
-				AbstractHorseEntity e = findHorseWithStorageID(horseOwner.getStorageUUID(), player.world);
+				AbstractHorse e = findHorseWithStorageID(horseOwner.getStorageUUID(), player.level);
 				if (e != null)
 				{
 					IStoredHorse horse = HorseHelper.getHorseCap(e);
 					if (horse.getStorageUUID().equals(horseOwner.getStorageUUID()))
 					{
-						if (e.world.func_230315_m_() == player.world.func_230315_m_())
+						if (e.level.dimensionType() == player.level.dimensionType())
 						{
-							e.removePassengers();
+							e.ejectPassengers();
 
-							if (e.getPositionVec().distanceTo(player.getPositionVec()) <= SERVER.horseWalkRange.get())
+							if (e.position().distanceTo(player.position()) <= SERVER.horseWalkRange.get())
 							{
 								// Horse walks //Follow range attribute
 								e.getAttribute(Attributes.FOLLOW_RANGE).setBaseValue(SERVER.horseWalkRange.get());
-								e.getNavigator().tryMoveToEntityLiving(player, SERVER.horseWalkSpeed.get());
+								e.getNavigation().moveTo(player, SERVER.horseWalkSpeed.get());
 							}
 							else
 							{
 								// TP-ing the horse
-								e.setPosition(player.getPosX(), player.getPosY(), player.getPosZ());
+								e.setPos(player.getX(), player.getY(), player.getZ());
 							}
 							HorseHelper.setHorseLastSeen(player);
 							HorseHelper.sendHorseUpdateInRange(e);
@@ -97,19 +97,19 @@ public class HorseManager
 							// Removing any loaded horses in other dims when a
 							// new one is spawned
 							HorseManager.saveHorse(e);
-							e.setPosition(e.getPosX(), -200, e.getPosZ());
-							e.remove();
+							e.setPos(e.getX(), -200, e.getZ());
+							e.discard();
 						}
 
 					}
 				}
 
 				// Spawning a new horse with a new num
-				AbstractHorseEntity newHorse = horseOwner.createHorseEntity(player.world);
-				newHorse.setPosition(player.getPosX(), player.getPosY(), player.getPosZ());
-				player.world.addEntity(newHorse);
+				AbstractHorse newHorse = horseOwner.createHorseEntity(player.level);
+				newHorse.setPos(player.getX(), player.getY(), player.getZ());
+				player.level.addFreshEntity(newHorse);
 				IStoredHorse h = HorseHelper.getHorseCap(newHorse);
-				HorseHelper.setHorseNum((ServerWorld) newHorse.world, h.getStorageUUID(), h.getHorseNum());
+				HorseHelper.setHorseNum((ServerLevel) newHorse.level, h.getStorageUUID(), h.getHorseNum());
 				HorseHelper.sendHorseUpdateInRange(newHorse);
 				HorseHelper.setHorseLastSeen(player);
 				return true;
@@ -121,18 +121,18 @@ public class HorseManager
 		return false;
 	}
 
-	public static void setHorse(PlayerEntity player)
+	public static void setHorse(Player player)
 	{
 		if (player != null)
 		{
-			if (player.getRidingEntity() == null)
+			if (player.getVehicle() == null)
 			{
-				player.sendStatusMessage(new TranslationTextComponent("callablehorses.error.notriding").mergeStyle(TextFormatting.RED), true);
+				player.displayClientMessage(new TranslatableComponent("callablehorses.error.notriding").withStyle(ChatFormatting.RED), true);
 				return;
 			}
 
-			Entity e = player.getRidingEntity();
-			if (e instanceof AbstractHorseEntity)
+			Entity e = player.getVehicle();
+			if (e instanceof AbstractHorse)
 			{
 				if (!canSetHorse(player, e))
 					return;
@@ -145,13 +145,13 @@ public class HorseManager
 
 				if (owned && !owner.equals(playerID))
 				{
-					player.sendStatusMessage(new TranslationTextComponent("callablehorses.error.alreadyowned").mergeStyle(TextFormatting.RED), true);
+					player.displayClientMessage(new TranslatableComponent("callablehorses.error.alreadyowned").withStyle(ChatFormatting.RED), true);
 					return;
 				}
 
 				if (owned && owner.equals(playerID))
 				{
-					player.sendStatusMessage(new TranslationTextComponent("callablehorses.error.alreadypersonal").mergeStyle(TextFormatting.RED), true);
+					player.displayClientMessage(new TranslatableComponent("callablehorses.error.alreadypersonal").withStyle(ChatFormatting.RED), true);
 					return;
 				}
 
@@ -161,14 +161,14 @@ public class HorseManager
 				// Marking any old horses as disbanded
 				if (!ownedID.isEmpty())
 				{
-					Entity ent = findHorseWithStorageID(horseOwner.getStorageUUID(), player.world);
+					Entity ent = findHorseWithStorageID(horseOwner.getStorageUUID(), player.level);
 					if (ent != null)
 					{
 						clearHorse(HorseHelper.getHorseCap(ent));
 					}
 					else
 					{
-						player.world.getServer().getWorlds().forEach(serverworld -> {
+						player.level.getServer().getAllLevels().forEach(serverworld -> {
 							StoredHorsesWorldData data = HorseHelper.getWorldData(serverworld);
 							data.disbandHorse(ownedID);
 						});
@@ -178,27 +178,27 @@ public class HorseManager
 				horseOwner.clearHorse();
 
 				// Setting the new horse
-				horseOwner.setHorse((AbstractHorseEntity) e, player);
+				horseOwner.setHorse((AbstractHorse) e, player);
 				HorseHelper.setHorseLastSeen(player);
-				HorseHelper.setHorseNum((ServerWorld) e.world, storedHorse.getStorageUUID(), storedHorse.getHorseNum());
-				player.sendStatusMessage(new TranslationTextComponent("callablehorses.success"), true);
+				HorseHelper.setHorseNum((ServerLevel) e.level, storedHorse.getStorageUUID(), storedHorse.getHorseNum());
+				player.displayClientMessage(new TranslatableComponent("callablehorses.success"), true);
 				HorseHelper.sendHorseUpdateInRange(e);
 
 			}
 		}
 	}
 
-	public static void showHorseStats(ServerPlayerEntity player)
+	public static void showHorseStats(ServerPlayer player)
 	{
 		IHorseOwner owner = HorseHelper.getOwnerCap(player);
 
 		if (owner.getHorseNBT().isEmpty())
 		{
-			player.sendStatusMessage(new TranslationTextComponent("callablehorses.error.nohorse").mergeStyle(TextFormatting.RED), true);
+			player.displayClientMessage(new TranslatableComponent("callablehorses.error.nohorse").withStyle(ChatFormatting.RED), true);
 			return;
 		}
 
-		Entity e = findHorseWithStorageID(owner.getStorageUUID(), player.world);
+		Entity e = findHorseWithStorageID(owner.getStorageUUID(), player.level);
 		if (e != null)
 		{
 			HorseManager.saveHorse(e);
@@ -216,21 +216,21 @@ public class HorseManager
 	}
 
 	@Nullable
-	public static AbstractHorseEntity findHorseWithStorageID(String id, World world)
+	public static AbstractHorse findHorseWithStorageID(String id, Level world)
 	{
 		MinecraftServer server = world.getServer();
 		List<Entity> entities = new ArrayList<Entity>();
 
-		for (ServerWorld w : server.getWorlds())
-			entities.addAll(w.getEntities().collect(Collectors.toList()));
+		for (ServerLevel w : server.getAllLevels())
+			entities.addAll(ImmutableList.copyOf(w.getAllEntities()));
 
 		for (Entity e : entities)
 		{
-			if (e instanceof AbstractHorseEntity)
+			if (e instanceof AbstractHorse)
 			{
 				IStoredHorse horse = HorseHelper.getHorseCap(e);
 				if (horse.getStorageUUID().equals(id))
-					return (AbstractHorseEntity) e;
+					return (AbstractHorse) e;
 
 			}
 		}
@@ -249,28 +249,28 @@ public class HorseManager
 			}
 		});
 
-		if (e instanceof AbstractChestedHorseEntity)
+		if (e instanceof AbstractChestedHorse)
 		{
-			((AbstractChestedHorseEntity) e).setChested(false);
+			((AbstractChestedHorse) e).setChest(false);
 		}
 
-		e.extinguish();
+		e.clearFire();
 		((LivingEntity) e).setHealth(((LivingEntity) e).getMaxHealth());
 
 	}
 
 	@SuppressWarnings("deprecation")
-	public static boolean canCallHorse(PlayerEntity player)
+	public static boolean canCallHorse(Player player)
 	{
 		if (isAreaProtected(player, null))
 		{
-			player.sendStatusMessage(new TranslationTextComponent("callablehorses.error.area").mergeStyle(TextFormatting.RED), true);
+			player.displayClientMessage(new TranslatableComponent("callablehorses.error.area").withStyle(ChatFormatting.RED), true);
 			return false;
 		}
 
-		if (player.getRidingEntity() != null)
+		if (player.getVehicle() != null)
 		{
-			player.sendStatusMessage(new TranslationTextComponent("callablehorses.error.riding").mergeStyle(TextFormatting.RED), true);
+			player.displayClientMessage(new TranslatableComponent("callablehorses.error.riding").withStyle(ChatFormatting.RED), true);
 			return false;
 		}
 
@@ -279,15 +279,15 @@ public class HorseManager
 			double startX, startY, startZ;
 			double endX, endY, endZ;
 
-			startX = player.getPosX() - 1;
-			startY = player.getPosY();
-			startZ = player.getPosZ() - 1;
+			startX = player.getX() - 1;
+			startY = player.getY();
+			startZ = player.getZ() - 1;
 
-			endX = player.getPosX() + 1;
-			endY = player.getPosY() + 2;
-			endZ = player.getPosZ() + 1;
+			endX = player.getX() + 1;
+			endY = player.getY() + 2;
+			endZ = player.getZ() + 1;
 
-			World world = player.world;
+			Level world = player.level;
 
 			for (double x = startX; x <= endX; x++)
 			{
@@ -297,9 +297,9 @@ public class HorseManager
 					{
 						BlockPos pos = new BlockPos(x, y, z);
 						BlockState state = world.getBlockState(pos);
-						if (state.getBlock().getCollisionShape(state, world, pos, null) != VoxelShapes.empty())
+						if (state.getBlock().getCollisionShape(state, world, pos, null) != Shapes.empty())
 						{
-							player.sendStatusMessage(new TranslationTextComponent("callablehorses.error.nospace").mergeStyle(TextFormatting.RED), true);
+							player.displayClientMessage(new TranslatableComponent("callablehorses.error.nospace").withStyle(ChatFormatting.RED), true);
 							return false;
 						}
 					}
@@ -310,14 +310,14 @@ public class HorseManager
 		if (!SERVER.callableInEveryDimension.get())
 		{
 			List<? extends String> allowedDims = SERVER.callableDimsWhitelist.get();
-			RegistryKey<World> playerDim = player.world.func_234923_W_();
+			ResourceKey<Level> playerDim = player.level.dimension();
 
 			for (int i = 0; i < allowedDims.size(); i++)
 			{
-				if (allowedDims.get(i).equals(playerDim.func_240901_a_().toString()))
+				if (allowedDims.get(i).equals(playerDim.location().toString()))
 					return true;
 			}
-			player.sendStatusMessage(new TranslationTextComponent("callablehorses.error.dim").mergeStyle(TextFormatting.RED), true);
+			player.displayClientMessage(new TranslatableComponent("callablehorses.error.dim").withStyle(ChatFormatting.RED), true);
 			return false;
 		}
 
@@ -325,45 +325,45 @@ public class HorseManager
 		if (maxDistance != -1)
 		{
 			IHorseOwner owner = HorseHelper.getOwnerCap(player);
-			Vector3d lastSeenPos = owner.getLastSeenPosition();
-			RegistryKey<World> lastSeenDim = owner.getLastSeenDim();
+			Vec3 lastSeenPos = owner.getLastSeenPosition();
+			ResourceKey<Level> lastSeenDim = owner.getLastSeenDim();
 
-			if (lastSeenPos.equals(Vector3d.ZERO))
+			if (lastSeenPos.equals(Vec3.ZERO))
 				return true;
 
-			MinecraftServer server = player.world.getServer();
+			MinecraftServer server = player.level.getServer();
 
-			Entity livingHorse = findHorseWithStorageID(owner.getStorageUUID(), player.world);
+			Entity livingHorse = findHorseWithStorageID(owner.getStorageUUID(), player.level);
 			if (livingHorse != null)
 			{
-				lastSeenPos = livingHorse.getPositionVec();
-				lastSeenDim = livingHorse.world.func_234923_W_(); // Dimension
+				lastSeenPos = livingHorse.position();
+				lastSeenDim = livingHorse.level.dimension(); // Dimension
 																	// registry
 																	// key
 			}
 
-			double movementFactorHorse = server.getWorld(lastSeenDim).func_230315_m_().func_242724_f(); // getDimensionType,
+			double movementFactorHorse = server.getLevel(lastSeenDim).dimensionType().coordinateScale(); // getDimensionType,
 																										// getMovementFactor
-			double movementFactorOwner = player.world.func_230315_m_().func_242724_f();
+			double movementFactorOwner = player.level.dimensionType().coordinateScale();
 
 			double movementFactorTotal = movementFactorHorse > movementFactorOwner ? movementFactorHorse / movementFactorOwner : movementFactorOwner / movementFactorHorse;
 
-			double distance = lastSeenPos.distanceTo(player.getPositionVec()) / movementFactorTotal;
+			double distance = lastSeenPos.distanceTo(player.position()) / movementFactorTotal;
 			if (distance <= maxDistance)
 				return true;
 
-			player.sendStatusMessage(new TranslationTextComponent("callablehorses.error.range").mergeStyle(TextFormatting.RED), true);
+			player.displayClientMessage(new TranslatableComponent("callablehorses.error.range").withStyle(ChatFormatting.RED), true);
 			return false;
 		}
 
 		return true;
 	}
 
-	public static boolean canSetHorse(PlayerEntity player, Entity entity)
+	public static boolean canSetHorse(Player player, Entity entity)
 	{
 		if (isAreaProtected(player, entity))
 		{
-			player.sendStatusMessage(new TranslationTextComponent("callablehorses.error.setarea").mergeStyle(TextFormatting.RED), true);
+			player.displayClientMessage(new TranslatableComponent("callablehorses.error.setarea").withStyle(ChatFormatting.RED), true);
 			return false;
 		}
 
@@ -372,17 +372,17 @@ public class HorseManager
 
 	public static void saveHorse(Entity e)
 	{
-		if (e instanceof AbstractHorseEntity)
+		if (e instanceof AbstractHorse)
 		{
-			if (((AbstractHorseEntity) e).hurtTime != 0)
+			if (((AbstractHorse) e).hurtTime != 0)
 				return;
 
-			World world = e.world;
+			Level world = e.level;
 			IStoredHorse horse = HorseHelper.getHorseCap(e);
 			if (horse != null && horse.isOwned())
 			{
 				String ownerid = horse.getOwnerUUID();
-				PlayerEntity owner = HorseHelper.getPlayerFromUUID(ownerid, world);
+				Player owner = HorseHelper.getPlayerFromUUID(ownerid, world);
 
 				if (owner != null)
 				{
@@ -390,14 +390,14 @@ public class HorseManager
 					IHorseOwner horseOwner = HorseHelper.getOwnerCap(owner);
 					if (horseOwner != null)
 					{
-						CompoundNBT nbt = e.serializeNBT();
+						CompoundTag nbt = e.serializeNBT();
 						horseOwner.setHorseNBT(nbt);
-						horseOwner.setLastSeenDim(e.world.func_234923_W_());
-						horseOwner.setLastSeenPosition(e.getPositionVec());
+						horseOwner.setLastSeenDim(e.level.dimension());
+						horseOwner.setLastSeenPosition(e.position());
 					}
 					else
 					{
-						world.getServer().getWorlds().forEach(serverworld -> {
+						world.getServer().getAllLevels().forEach(serverworld -> {
 							StoredHorsesWorldData data = HorseHelper.getWorldData(serverworld);
 							data.addOfflineSavedHorse(horse.getStorageUUID(), e.serializeNBT());
 						});
@@ -405,20 +405,20 @@ public class HorseManager
 				}
 				else
 				{
-					StoredHorsesWorldData data = HorseHelper.getWorldData((ServerWorld) world);
+					StoredHorsesWorldData data = HorseHelper.getWorldData((ServerLevel) world);
 					data.addOfflineSavedHorse(horse.getStorageUUID(), e.serializeNBT());
 				}
 			}
 		}
 	}
 
-	private static boolean isAreaProtected(PlayerEntity player, @Nullable Entity fakeHorse)
+	private static boolean isAreaProtected(Player player, @Nullable Entity fakeHorse)
 	{
 		IHorseOwner owner = HorseHelper.getOwnerCap(player);
 		if (fakeHorse == null)
-			fakeHorse = owner.createHorseEntity(player.world);
-		fakeHorse.setPosition(player.getPosX(), player.getPosY(), player.getPosZ());
-		PlayerInteractEvent.EntityInteract interactEvent = new EntityInteract(player, Hand.MAIN_HAND, fakeHorse);
+			fakeHorse = owner.createHorseEntity(player.level);
+		fakeHorse.setPos(player.getX(), player.getY(), player.getZ());
+		PlayerInteractEvent.EntityInteract interactEvent = new EntityInteract(player, InteractionHand.MAIN_HAND, fakeHorse);
 		AttackEntityEvent attackEvent = new AttackEntityEvent(player, fakeHorse);
 
 		MinecraftForge.EVENT_BUS.post(interactEvent);

@@ -1,21 +1,21 @@
 package tschipp.callablehorses.network;
 
-import java.util.function.Supplier;
-
-import net.minecraft.entity.Entity;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.world.World;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
+import net.minecraftforge.network.NetworkEvent;
 import tschipp.callablehorses.CallableHorses;
-import tschipp.callablehorses.common.capabilities.storedhorse.HorseProvider;
 import tschipp.callablehorses.common.capabilities.storedhorse.IStoredHorse;
+import tschipp.callablehorses.common.capabilities.storedhorse.StoredHorse;
 import tschipp.callablehorses.common.helper.HorseHelper;
+
+import java.util.function.Supplier;
 
 public class HorseCapSyncPacket
 {
 	private int entityID = 0;
-	private CompoundNBT horseNBT = null;
+	private CompoundTag horseNBT = null;
 
 	public HorseCapSyncPacket()
 	{
@@ -24,19 +24,19 @@ public class HorseCapSyncPacket
 	public HorseCapSyncPacket(int entityID, IStoredHorse horse)
 	{
 		this.entityID = entityID;
-		this.horseNBT = (CompoundNBT) HorseProvider.HORSE_CAPABILITY.getStorage().writeNBT(HorseProvider.HORSE_CAPABILITY, horse, null);
+		this.horseNBT = (CompoundTag) StoredHorse.writeNBT(horse);
 	}
 
-	public HorseCapSyncPacket(PacketBuffer buf)
+	public HorseCapSyncPacket(FriendlyByteBuf buf)
 	{
 		this.entityID = buf.readInt();
-		this.horseNBT = buf.readCompoundTag();
+		this.horseNBT = buf.readNbt();
 	}
 
-	public void toBytes(PacketBuffer buf)
+	public void toBytes(FriendlyByteBuf buf)
 	{
 		buf.writeInt(entityID);
-		buf.writeCompoundTag(horseNBT);
+		buf.writeNbt(horseNBT);
 	}
 
 	public void handle(Supplier<NetworkEvent.Context> ctx)
@@ -45,13 +45,13 @@ public class HorseCapSyncPacket
 		{
 			ctx.get().enqueueWork(() -> {
 
-				World world = CallableHorses.proxy.getWorld();
+				Level world = CallableHorses.proxy.getWorld();
 
-				Entity e = world.getEntityByID(entityID);
+				Entity e = world.getEntity(entityID);
 				if (e != null)
 				{
 					IStoredHorse horse = HorseHelper.getHorseCap(e);
-					HorseProvider.HORSE_CAPABILITY.getStorage().readNBT(HorseProvider.HORSE_CAPABILITY, horse, null, horseNBT);
+					StoredHorse.readNBT(horse, horseNBT);
 				}
 
 			});
