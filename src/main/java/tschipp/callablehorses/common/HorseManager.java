@@ -1,34 +1,32 @@
 package tschipp.callablehorses.common;
 
 import com.google.common.collect.ImmutableList;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.horse.AbstractChestedHorse;
 import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.Vec3;
-import net.minecraft.ChatFormatting;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteract;
-import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.network.PacketDistributor;
 import tschipp.callablehorses.CallableHorses;
@@ -243,7 +241,7 @@ public class HorseManager
 	// Clear armor, saddle, and any chest items
 	public static void prepDeadHorseForRespawning(Entity e)
 	{
-		LazyOptional<IItemHandler> cap = e.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, null);
+		LazyOptional<IItemHandler> cap = e.getCapability(ForgeCapabilities.ITEM_HANDLER, null);
 		cap.ifPresent(itemHandler -> {
 			for (int i = 0; i < itemHandler.getSlots(); i++)
 			{

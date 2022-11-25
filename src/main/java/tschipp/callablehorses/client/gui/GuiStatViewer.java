@@ -7,7 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -18,16 +18,12 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.phys.Vec3;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.WoolCarpetBlock;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
-import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import tschipp.callablehorses.CallableHorses;
 import tschipp.callablehorses.common.capabilities.horseowner.IHorseOwner;
@@ -67,7 +63,7 @@ public class GuiStatViewer extends Screen
 		// attributes		
 		this.horse.load(owner.getHorseNBT());
 
-		LazyOptional<IItemHandler> cap = horse.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, null);
+		LazyOptional<IItemHandler> cap = horse.getCapability(ForgeCapabilities.ITEM_HANDLER, null);
 		cap.ifPresent(horseInventory -> {
 			if (horseInventory.getStackInSlot(0).isEmpty() && horse.isSaddleable())
 				horse.equipSaddle(null);// Set saddled
