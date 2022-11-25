@@ -96,23 +96,18 @@ public class EntityEvents
 				if (horse.isOwned())
 				{
 					StoredHorsesWorldData data = HorseHelper.getWorldData((ServerLevel) world);
-					if (data.isDisbanded(horse.getStorageUUID()))
+					int globalNum = HorseHelper.getHorseNum((ServerLevel) joiningEntity.level, horse.getStorageUUID());
+					if (globalNum > horse.getHorseNum())
+					{
+						event.setCanceled(true);
+						CallableHorses.LOGGER.debug(joiningEntity + " was instantly despawned because its number is " + horse.getHorseNum() + " and the global num is " + globalNum);
+					}
+					else if (data.isDisbanded(horse.getStorageUUID()))
 					{
 						HorseManager.clearHorse(horse);
 						data.clearDisbanded(horse.getStorageUUID());
 
 					}
-					else
-					{
-						int globalNum = HorseHelper.getHorseNum((ServerLevel) joiningEntity.level, horse.getStorageUUID());
-						if (globalNum > horse.getHorseNum())
-						{
-//										e.setPosition(e.getPosX(), -200, e.getPosZ());
-							event.setCanceled(true);
-							CallableHorses.LOGGER.debug(joiningEntity + " was instantly despawned because its number is " + horse.getHorseNum() + " and the global num is " + globalNum);
-						}
-					}
-
 				}
 			}
 		}
@@ -175,9 +170,10 @@ public class EntityEvents
 		Player original = event.getOriginal();
 		Player newPlayer = event.getPlayer();
 
-		//TODO: FIx crash
+		original.reviveCaps();
 		IHorseOwner oldHorse = HorseHelper.getOwnerCap(original);
 		IHorseOwner newHorse = HorseHelper.getOwnerCap(newPlayer);
+		original.invalidateCaps();
 
 		newHorse.setHorseNBT(oldHorse.getHorseNBT());
 		newHorse.setHorseNum(oldHorse.getHorseNum());

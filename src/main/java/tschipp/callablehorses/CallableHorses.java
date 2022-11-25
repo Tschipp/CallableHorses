@@ -7,6 +7,7 @@ import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.config.ModConfig.Type;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.forgespi.language.IModInfo;
 import net.minecraftforge.network.simple.SimpleChannel;
@@ -42,7 +43,7 @@ public class CallableHorses
 		WhistleSounds.SOUND_EVENTS.register(eventBus);
 		HorseDropModifier.GLM.register(eventBus);
 
-		ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, Configs.SERVER_SPEC);
+		ModLoadingContext.get().registerConfig(Type.COMMON, Configs.SERVER_SPEC);
 
 		info = ModLoadingContext.get().getActiveContainer().getModInfo();
 

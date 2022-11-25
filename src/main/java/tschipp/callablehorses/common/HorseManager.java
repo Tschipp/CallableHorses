@@ -1,34 +1,26 @@
 package tschipp.callablehorses.common;
 
-import static tschipp.callablehorses.common.config.Configs.SERVER;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
-import javax.annotation.Nullable;
-
 import com.google.common.collect.ImmutableList;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.horse.AbstractChestedHorse;
 import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.Vec3;
-import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.level.Level;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
@@ -44,6 +36,13 @@ import tschipp.callablehorses.common.helper.HorseHelper;
 import tschipp.callablehorses.common.worlddata.StoredHorsesWorldData;
 import tschipp.callablehorses.network.OwnerSyncShowStatsPacket;
 import tschipp.callablehorses.network.PlayWhistlePacket;
+
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+import static tschipp.callablehorses.common.config.Configs.SERVER;
 
 public class HorseManager
 {
@@ -87,6 +86,7 @@ public class HorseManager
 							{
 								// TP-ing the horse
 								e.setPos(player.getX(), player.getY(), player.getZ());
+								e.getNavigation().moveTo(player, SERVER.horseWalkSpeed.get());
 							}
 							HorseHelper.setHorseLastSeen(player);
 							HorseHelper.sendHorseUpdateInRange(e);
@@ -372,9 +372,9 @@ public class HorseManager
 
 	public static void saveHorse(Entity e)
 	{
-		if (e instanceof AbstractHorse)
+		if (e instanceof AbstractHorse abstractHorse)
 		{
-			if (((AbstractHorse) e).hurtTime != 0)
+			if (abstractHorse.isDeadOrDying())
 				return;
 
 			Level world = e.level;
