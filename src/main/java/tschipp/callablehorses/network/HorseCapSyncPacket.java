@@ -5,6 +5,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.NetworkEvent.Context;
 import tschipp.callablehorses.CallableHorses;
 import tschipp.callablehorses.common.capabilities.storedhorse.IStoredHorse;
 import tschipp.callablehorses.common.capabilities.storedhorse.StoredHorse;
@@ -41,9 +42,11 @@ public class HorseCapSyncPacket
 
 	public void handle(Supplier<NetworkEvent.Context> ctx)
 	{
-		if (ctx.get().getDirection().getReceptionSide().isClient())
+		Context context = ctx.get();
+		if (context.getDirection().getReceptionSide().isClient())
 		{
-			ctx.get().enqueueWork(() -> {
+			context.setPacketHandled(true);
+			context.enqueueWork(() -> {
 
 				Level world = CallableHorses.proxy.getWorld();
 

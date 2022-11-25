@@ -1,14 +1,15 @@
 package tschipp.callablehorses.network;
 
-import java.util.Random;
-import java.util.function.Supplier;
-
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.NetworkEvent.Context;
 import tschipp.callablehorses.CallableHorses;
 import tschipp.callablehorses.common.WhistleSounds;
+
+import java.util.Random;
+import java.util.function.Supplier;
 
 public class PlayWhistlePacket
 {
@@ -26,9 +27,11 @@ public class PlayWhistlePacket
 
 	public void handle(Supplier<NetworkEvent.Context> ctx)
 	{
-		if (ctx.get().getDirection().getReceptionSide().isClient())
+		Context context = ctx.get();
+		if (context.getDirection().getReceptionSide().isClient())
 		{
-			ctx.get().enqueueWork(() -> {
+			context.setPacketHandled(true);
+			context.enqueueWork(() -> {
 
 				Player player = CallableHorses.proxy.getPlayer();
 

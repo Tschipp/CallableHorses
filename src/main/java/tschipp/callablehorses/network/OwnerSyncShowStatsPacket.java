@@ -4,6 +4,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.NetworkEvent.Context;
 import tschipp.callablehorses.CallableHorses;
 import tschipp.callablehorses.common.capabilities.horseowner.HorseOwner;
 import tschipp.callablehorses.common.capabilities.horseowner.IHorseOwner;
@@ -36,9 +37,11 @@ public class OwnerSyncShowStatsPacket
 
 	public void handle(Supplier<NetworkEvent.Context> ctx)
 	{
-		if (ctx.get().getDirection().getReceptionSide().isClient())
+		Context context = ctx.get();
+		if (context.getDirection().getReceptionSide().isClient())
 		{
-			ctx.get().enqueueWork(() -> {
+			context.setPacketHandled(true);
+			context.enqueueWork(() -> {
 
 				Player player = CallableHorses.proxy.getPlayer();
 

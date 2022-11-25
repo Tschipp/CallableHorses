@@ -1,11 +1,12 @@
 package tschipp.callablehorses.network;
 
-import java.util.function.Supplier;
-
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.NetworkEvent.Context;
 import tschipp.callablehorses.common.HorseManager;
+
+import java.util.function.Supplier;
 
 public class PressKeyPacket
 {
@@ -32,11 +33,13 @@ public class PressKeyPacket
 
 	public void handle(Supplier<NetworkEvent.Context> ctx)
 	{
-		if (ctx.get().getDirection().getReceptionSide().isServer())
+		Context context = ctx.get();
+		if (context.getDirection().getReceptionSide().isServer())
 		{
-			ctx.get().enqueueWork(() -> {
+			context.setPacketHandled(true);
+			context.enqueueWork(() -> {
 
-				ServerPlayer player = ctx.get().getSender();
+				ServerPlayer player = context.getSender();
 
 				if (player != null)
 				{
