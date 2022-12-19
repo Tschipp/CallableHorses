@@ -2,7 +2,7 @@ package tschipp.callablehorses.common.capabilities.horseowner;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.resources.ResourceKey;
@@ -32,7 +32,7 @@ public class HorseOwner implements IHorseOwner, ICapabilitySerializable<Compound
 	private int horseNum = 0;
 	private CompoundTag horseNBT = new CompoundTag();
 	private String storageUUID = "";
-	private ResourceKey<Level> lastSeenDim = ResourceKey.create(Registry.DIMENSION_REGISTRY, new ResourceLocation("overworld"));
+	private ResourceKey<Level> lastSeenDim = ResourceKey.create(Registries.DIMENSION, new ResourceLocation("overworld"));
 	private Vec3 lastSeenPos = Vec3.ZERO;
 
 	@Override
@@ -98,7 +98,7 @@ public class HorseOwner implements IHorseOwner, ICapabilitySerializable<Compound
 		horseNum = 0;
 		horseNBT = new CompoundTag();
 		storageUUID = "";
-		lastSeenDim = ResourceKey.create(Registry.DIMENSION_REGISTRY, new ResourceLocation("overworld"));
+		lastSeenDim = ResourceKey.create(Registries.DIMENSION, new ResourceLocation("overworld"));
 		lastSeenPos = Vec3.ZERO;
 	}
 
@@ -193,6 +193,6 @@ public class HorseOwner implements IHorseOwner, ICapabilitySerializable<Compound
 		instance.setStorageUUID(tag.getString("uuid"));
 		BlockPos temp = NbtUtils.readBlockPos(tag.getCompound("lastSeenPos"));
 		instance.setLastSeenPosition(new Vec3(temp.getX(), temp.getY(), temp.getZ()));
-		instance.setLastSeenDim(ResourceKey.create(Registry.DIMENSION_REGISTRY, new ResourceLocation(tag.getString("lastSeenDim"))));
+		instance.setLastSeenDim(ResourceKey.create(Registries.DIMENSION, new ResourceLocation(tag.getString("lastSeenDim"))));
 	}
 }

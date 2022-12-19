@@ -12,5 +12,5 @@ public class WhistleSounds
 	public static final DeferredRegister<SoundEvent> SOUND_EVENTS = DeferredRegister.create(ForgeRegistries.SOUND_EVENTS, CallableHorses.MODID);
 
 	public static final RegistryObject<SoundEvent> WHISTLE = SOUND_EVENTS.register("whistle", () ->
-			new SoundEvent(new ResourceLocation(CallableHorses.MODID, "whistle")));
+			SoundEvent.createVariableRangeEvent(new ResourceLocation(CallableHorses.MODID, "whistle")));
 }
