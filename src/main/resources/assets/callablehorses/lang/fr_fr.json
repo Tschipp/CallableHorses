@@ -1,0 +1,22 @@
+{
+    "key.callablehorses.category": "Callable Horses",
+    "key.sethorse.desc": "Définir le Cheval",
+    "key.callhorse.desc": "Appeler le Cheval",
+    "key.showstats.desc": "Afficher les Statistiques du Cheval",
+
+    "callablehorses.error.dim": "Vous ne pouvez pas appeler votre cheval dans cette dimension !",
+    "callablehorses.error.riding": "Vous ne pouvez pas chevaucher en appelant votre cheval !",
+    "callablehorses.error.nohorse": "Vous n'avez actuellement pas de cheval personnel !",
+    "callablehorses.error.notriding": "Il faut monter à cheval pour faire ça !",
+    "callablehorses.error.alreadyowned": "Ce cheval a déjà un propriétaire !",
+    "callablehorses.error.alreadypersonal": "C'est déjà votre cheval personnel !",
+    "callablehorses.error.area": "Vous ne pouvez pas appeler votre cheval dans cette zone !",
+    "callablehorses.error.range": "Votre cheval est trop loin pour vous entendre !",
+    "callablehorses.error.setarea": "Vous ne pouvez pas définir ce cheval dans cette zone !",
+    "callablehorses.error.nospace": "Il n'y a pas assez de place ici pour appeler votre cheval !",
+
+    "callablehorses.success": "C'est maintenant votre cheval personnel !",
+
+    "callablehorses.alert.death": "Votre cheval personnel vient de mourir !",
+    "callablehorses.alert.offlinedeath": "Votre cheval personnel est mort alors que vous étiez hors ligne !"
+}
