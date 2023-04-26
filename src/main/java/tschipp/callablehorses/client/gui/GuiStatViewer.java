@@ -49,7 +49,7 @@ public class GuiStatViewer extends Screen
 	private Vec3 lastPos;
 	private ResourceKey<Level> lastDim;
 
-	private static Method setColor = ObfuscationReflectionHelper.findMethod(Llama.class, "setSwag", DyeColor.class);
+	private static Method setColor = ObfuscationReflectionHelper.findMethod(Llama.class, "m_30771_", DyeColor.class);
 
 	private Minecraft mc = Minecraft.getInstance();
 
@@ -59,8 +59,8 @@ public class GuiStatViewer extends Screen
 		this.owner = HorseHelper.getOwnerCap(player);
 		this.horse = owner.createHorseEntity(player.level);
 		horse.getAttributes().load(owner.getHorseNBT().getList("Attributes", 10)); // Read
-					
-		// attributes		
+
+		// attributes
 		this.horse.load(owner.getHorseNBT());
 
 		LazyOptional<IItemHandler> cap = horse.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, null);
@@ -146,22 +146,22 @@ public class GuiStatViewer extends Screen
 	{
 		return false;
 	}
-	
+
 	@Override
 	public boolean shouldCloseOnEsc()
 	{
 		return true;
 	}
-	
+
 	@Override
 	public boolean keyPressed(int keyCode, int scanCode, int modifiers)
-	{		
+	{
 		if (this.mc.options.keyInventory.isActiveAndMatches(InputConstants.getKey(keyCode, modifiers)))
 		{
 			this.mc.player.closeContainer();
 			return true;
 		}
-		
+
 		return super.keyPressed(keyCode, scanCode, modifiers);
 	}
 
