@@ -35,7 +35,7 @@ public class PlayWhistlePacket
 				if (player != null)
 				{
 					Random rand = new Random();
-					player.level.playSound(player, player.blockPosition(), WhistleSounds.WHISTLE.get(), SoundSource.PLAYERS, 1f, (float) (1.4 + rand.nextGaussian() / 3));
+					player.level().playSound(player, player.blockPosition(), WhistleSounds.WHISTLE.get(), SoundSource.PLAYERS, 1f, (float) (1.4 + rand.nextGaussian() / 3));
 				}
 			}
 		});

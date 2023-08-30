@@ -55,7 +55,7 @@ public class HorseHelper
 	public static void sendHorseUpdateInRange(Entity horse)
 	{
 		IStoredHorse storedHorse = getHorseCap(horse);
-		CallableHorses.network.send(PacketDistributor.NEAR.with(() -> new TargetPoint(horse.getX(), horse.getZ(), horse.getZ(), 32, horse.level.dimension())), new HorseCapSyncPacket(horse.getId(), storedHorse));
+		CallableHorses.network.send(PacketDistributor.NEAR.with(() -> new TargetPoint(horse.getX(), horse.getZ(), horse.getZ(), 32, horse.level().dimension())), new HorseCapSyncPacket(horse.getId(), storedHorse));
 	}
 
 	public static void sendHorseUpdateToClient(Entity horse, Player player)
@@ -91,7 +91,7 @@ public class HorseHelper
 	{
 		IHorseOwner owner = getOwnerCap(player);
 		owner.setLastSeenPosition(player.position());
-		owner.setLastSeenDim(player.level.dimension());
+		owner.setLastSeenDim(player.level().dimension());
 	}
 
 	public static StoredHorsesWorldData getWorldData(ServerLevel world)
