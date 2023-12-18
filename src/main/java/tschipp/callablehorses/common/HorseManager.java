@@ -63,16 +63,16 @@ public class HorseManager
 				if (!canCallHorse(player))
 					return false;
 				Random rand = new Random();
-				player.level.playSound(player, player.blockPosition(), WhistleSounds.WHISTLE.get(), SoundSource.PLAYERS, 1f, (float) (1.4 + rand.nextGaussian() / 3));
+				player.level().playSound(player, player.blockPosition(), WhistleSounds.WHISTLE.get(), SoundSource.PLAYERS, 1f, (float) (1.4 + rand.nextGaussian() / 3));
 				CallableHorses.network.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer)player), new PlayWhistlePacket());
 
-				AbstractHorse e = findHorseWithStorageID(horseOwner.getStorageUUID(), player.level);
+				AbstractHorse e = findHorseWithStorageID(horseOwner.getStorageUUID(), player.level());
 				if (e != null)
 				{
 					IStoredHorse horse = HorseHelper.getHorseCap(e);
 					if (horse.getStorageUUID().equals(horseOwner.getStorageUUID()))
 					{
-						if (e.level.dimensionType() == player.level.dimensionType())
+						if (e.level().dimensionType() == player.level().dimensionType())
 						{
 							e.ejectPassengers();
 
@@ -105,11 +105,11 @@ public class HorseManager
 				}
 
 				// Spawning a new horse with a new num
-				AbstractHorse newHorse = horseOwner.createHorseEntity(player.level);
+				AbstractHorse newHorse = horseOwner.createHorseEntity(player.level());
 				newHorse.setPos(player.getX(), player.getY(), player.getZ());
-				player.level.addFreshEntity(newHorse);
+				player.level().addFreshEntity(newHorse);
 				IStoredHorse h = HorseHelper.getHorseCap(newHorse);
-				HorseHelper.setHorseNum((ServerLevel) newHorse.level, h.getStorageUUID(), h.getHorseNum());
+				HorseHelper.setHorseNum((ServerLevel) newHorse.level(), h.getStorageUUID(), h.getHorseNum());
 				HorseHelper.sendHorseUpdateInRange(newHorse);
 				HorseHelper.setHorseLastSeen(player);
 				return true;
@@ -161,14 +161,14 @@ public class HorseManager
 				// Marking any old horses as disbanded
 				if (!ownedID.isEmpty())
 				{
-					Entity ent = findHorseWithStorageID(horseOwner.getStorageUUID(), player.level);
+					Entity ent = findHorseWithStorageID(horseOwner.getStorageUUID(), player.level());
 					if (ent != null)
 					{
 						clearHorse(HorseHelper.getHorseCap(ent));
 					}
 					else
 					{
-						player.level.getServer().getAllLevels().forEach(serverworld -> {
+						player.level().getServer().getAllLevels().forEach(serverworld -> {
 							StoredHorsesWorldData data = HorseHelper.getWorldData(serverworld);
 							data.disbandHorse(ownedID);
 						});
@@ -180,7 +180,7 @@ public class HorseManager
 				// Setting the new horse
 				horseOwner.setHorse((AbstractHorse) e, player);
 				HorseHelper.setHorseLastSeen(player);
-				HorseHelper.setHorseNum((ServerLevel) e.level, storedHorse.getStorageUUID(), storedHorse.getHorseNum());
+				HorseHelper.setHorseNum((ServerLevel) e.level(), storedHorse.getStorageUUID(), storedHorse.getHorseNum());
 				player.displayClientMessage(Component.translatable("callablehorses.success"), true);
 				HorseHelper.sendHorseUpdateInRange(e);
 
@@ -198,7 +198,7 @@ public class HorseManager
 			return;
 		}
 
-		Entity e = findHorseWithStorageID(owner.getStorageUUID(), player.level);
+		Entity e = findHorseWithStorageID(owner.getStorageUUID(), player.level());
 		if (e != null)
 		{
 			HorseManager.saveHorse(e);
@@ -287,7 +287,7 @@ public class HorseManager
 			endY = player.getY() + 2;
 			endZ = player.getZ() + 1;
 
-			Level world = player.level;
+			Level world = player.level();
 
 			for (double x = startX; x <= endX; x++)
 			{
@@ -295,7 +295,7 @@ public class HorseManager
 				{
 					for (double z = startZ; z <= endZ; z++)
 					{
-						BlockPos pos = new BlockPos(x, y, z);
+						BlockPos pos = new BlockPos((int) x, (int) y, (int) z);
 						BlockState state = world.getBlockState(pos);
 						if (state.getBlock().getCollisionShape(state, world, pos, null) != Shapes.empty())
 						{
@@ -310,7 +310,7 @@ public class HorseManager
 		if (!SERVER.callableInEveryDimension.get())
 		{
 			List<? extends String> allowedDims = SERVER.callableDimsWhitelist.get();
-			ResourceKey<Level> playerDim = player.level.dimension();
+			ResourceKey<Level> playerDim = player.level().dimension();
 
 			for (int i = 0; i < allowedDims.size(); i++)
 			{
@@ -331,20 +331,20 @@ public class HorseManager
 			if (lastSeenPos.equals(Vec3.ZERO))
 				return true;
 
-			MinecraftServer server = player.level.getServer();
+			MinecraftServer server = player.level().getServer();
 
-			Entity livingHorse = findHorseWithStorageID(owner.getStorageUUID(), player.level);
+			Entity livingHorse = findHorseWithStorageID(owner.getStorageUUID(), player.level());
 			if (livingHorse != null)
 			{
 				lastSeenPos = livingHorse.position();
-				lastSeenDim = livingHorse.level.dimension(); // Dimension
+				lastSeenDim = livingHorse.level().dimension(); // Dimension
 																	// registry
 																	// key
 			}
 
 			double movementFactorHorse = server.getLevel(lastSeenDim).dimensionType().coordinateScale(); // getDimensionType,
 																										// getMovementFactor
-			double movementFactorOwner = player.level.dimensionType().coordinateScale();
+			double movementFactorOwner = player.level().dimensionType().coordinateScale();
 
 			double movementFactorTotal = movementFactorHorse > movementFactorOwner ? movementFactorHorse / movementFactorOwner : movementFactorOwner / movementFactorHorse;
 
@@ -377,7 +377,7 @@ public class HorseManager
 			if (abstractHorse.isDeadOrDying())
 				return;
 
-			Level world = e.level;
+			Level world = e.level();
 			IStoredHorse horse = HorseHelper.getHorseCap(e);
 			if (horse != null && horse.isOwned())
 			{
@@ -392,7 +392,7 @@ public class HorseManager
 					{
 						CompoundTag nbt = e.serializeNBT();
 						horseOwner.setHorseNBT(nbt);
-						horseOwner.setLastSeenDim(e.level.dimension());
+						horseOwner.setLastSeenDim(e.level().dimension());
 						horseOwner.setLastSeenPosition(e.position());
 					}
 					else
@@ -416,7 +416,7 @@ public class HorseManager
 	{
 		IHorseOwner owner = HorseHelper.getOwnerCap(player);
 		if (fakeHorse == null)
-			fakeHorse = owner.createHorseEntity(player.level);
+			fakeHorse = owner.createHorseEntity(player.level());
 		fakeHorse.setPos(player.getX(), player.getY(), player.getZ());
 		PlayerInteractEvent.EntityInteract interactEvent = new EntityInteract(player, InteractionHand.MAIN_HAND, fakeHorse);
 		AttackEntityEvent attackEvent = new AttackEntityEvent(player, fakeHorse);

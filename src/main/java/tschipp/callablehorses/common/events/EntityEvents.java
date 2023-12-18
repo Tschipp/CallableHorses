@@ -95,7 +95,7 @@ public class EntityEvents
 				if (horse.isOwned())
 				{
 					StoredHorsesWorldData data = HorseHelper.getWorldData((ServerLevel) world);
-					int globalNum = HorseHelper.getHorseNum((ServerLevel) joiningEntity.level, horse.getStorageUUID());
+					int globalNum = HorseHelper.getHorseNum((ServerLevel) joiningEntity.level(), horse.getStorageUUID());
 					if (globalNum > horse.getHorseNum())
 					{
 						event.setCanceled(true);
@@ -221,7 +221,7 @@ public class EntityEvents
 	public static void onStopTracking(PlayerEvent.StopTracking event)
 	{
 		Player player = event.getEntity();
-		Level world = player.level;
+		Level world = player.level();
 		Entity e = event.getTarget();
 
 		if (!world.isClientSide && e.isAlive())
@@ -236,7 +236,7 @@ public class EntityEvents
 	public static void onStartTracking(PlayerEvent.StartTracking event)
 	{
 		Player player = event.getEntity();
-		if (!player.level.isClientSide)
+		if (!player.level().isClientSide)
 		{
 			Entity target = event.getTarget();
 			if (target instanceof AbstractHorse)
@@ -252,7 +252,7 @@ public class EntityEvents
 	{
 
 		Entity e = event.getEntity();
-		if (e instanceof AbstractHorse && !e.level.isClientSide)
+		if (e instanceof AbstractHorse && !e.level().isClientSide)
 		{
 			if (Configs.SERVER.enableDebug.get() || Configs.SERVER.continuousAntiDupeChecking.get())
 			{
@@ -263,7 +263,7 @@ public class EntityEvents
 				if (Configs.SERVER.continuousAntiDupeChecking.get())
 				{
 					int thisNum = horse.getHorseNum();
-					int globalNum = HorseHelper.getHorseNum((ServerLevel) e.level, horse.getStorageUUID());
+					int globalNum = HorseHelper.getHorseNum((ServerLevel) e.level(), horse.getStorageUUID());
 					if (globalNum > thisNum)
 					{
 //						e.setPosition(e.getPosX(), -200, e.getPosZ());
@@ -281,12 +281,12 @@ public class EntityEvents
 	{
 		Entity e = event.getEntity();
 
-		if (!e.level.isClientSide && e instanceof AbstractHorse)
+		if (!e.level().isClientSide && e instanceof AbstractHorse)
 		{
 			IStoredHorse horse = HorseHelper.getHorseCap(e);
 			if (horse.isOwned())
 			{
-				Player owner = HorseHelper.getPlayerFromUUID(horse.getOwnerUUID(), e.level);
+				Player owner = HorseHelper.getPlayerFromUUID(horse.getOwnerUUID(), e.level());
 				if (owner != null)
 				{
 					IHorseOwner horseOwner = HorseHelper.getOwnerCap(owner);
@@ -298,7 +298,7 @@ public class EntityEvents
 					else
 					{
 						HorseManager.saveHorse(e);
-						AbstractHorse deadHorse = horseOwner.createHorseEntity(owner.level);
+						AbstractHorse deadHorse = horseOwner.createHorseEntity(owner.level());
 						HorseManager.prepDeadHorseForRespawning(deadHorse);
 						horseOwner.setHorseNBT(deadHorse.serializeNBT());
 						horseOwner.setLastSeenPosition(Vec3.ZERO);
@@ -308,7 +308,7 @@ public class EntityEvents
 				else
 				{
 					CallableHorses.LOGGER.debug(e + " was marked as killed.");
-					e.level.getServer().getAllLevels().forEach(serverworld -> {
+					e.level().getServer().getAllLevels().forEach(serverworld -> {
 						HorseHelper.getWorldData(serverworld).markKilled(horse.getStorageUUID());
 					});
 				}

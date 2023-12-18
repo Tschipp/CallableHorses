@@ -178,10 +178,12 @@ public class HorseOwner implements IHorseOwner, ICapabilitySerializable<Compound
 		}
 		CompoundTag tag = new CompoundTag();
 
+		Vec3 lastSeen = instance.getLastSeenPosition();
+
 		tag.put("horse", instance.getHorseNBT());
 		tag.putInt("horseNum", instance.getHorseNum());
 		tag.putString("uuid", instance.getStorageUUID());
-		tag.put("lastSeenPos", NbtUtils.writeBlockPos(new BlockPos(instance.getLastSeenPosition())));
+		tag.put("lastSeenPos", NbtUtils.writeBlockPos(new BlockPos((int) lastSeen.x, (int)lastSeen.y, (int)lastSeen.z)));
 		tag.putString("lastSeenDim", instance.getLastSeenDim().location().toString());
 		return tag;
 
