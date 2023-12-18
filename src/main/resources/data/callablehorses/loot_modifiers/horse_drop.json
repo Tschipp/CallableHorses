@@ -1,11 +1,12 @@
 {
+  "type": "callablehorses:horse_drop",
   "conditions": [
     {
 	  "condition": "minecraft:entity_properties",
 	  "predicate": {
 		   "type": "#callablehorses:callablehorses"
 	  },
-	  "entity": "THIS"
+	  "entity": "this"
     }
   ]
 }
