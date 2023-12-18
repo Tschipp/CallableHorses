@@ -19,6 +19,7 @@ import net.minecraftforge.registries.RegistryObject;
 import org.jetbrains.annotations.NotNull;
 import tschipp.callablehorses.CallableHorses;
 import tschipp.callablehorses.common.capabilities.storedhorse.IStoredHorse;
+import tschipp.callablehorses.common.config.Configs;
 import tschipp.callablehorses.common.helper.HorseHelper;
 
 public class HorseDropModifier extends LootModifier
@@ -51,7 +52,10 @@ public class HorseDropModifier extends LootModifier
 				IStoredHorse horse = HorseHelper.getHorseCap(entity);
 				if (horse != null && horse.isOwned())
 				{
-					generatedLoot.clear();
+					if (Configs.SERVER.disableHorseDrops.get())
+					{
+						generatedLoot.clear();
+					}
 				}
 			}
 		}
