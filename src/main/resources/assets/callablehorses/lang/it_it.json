@@ -1,0 +1,22 @@
+{
+    "key.callablehorses.category": "Cavalli Richiamabili",
+    "key.sethorse.desc": "Imposta Cavallo",
+    "key.callhorse.desc": "Chiama Cavallo",
+    "key.showstats.desc": "Mostra Statistiche Cavallo",
+
+    "callablehorses.error.dim": "Non puoi chiamare il tuo cavallo in questa dimensione!",
+    "callablehorses.error.riding": "Non puoi chiamare il tuo cavallo mentre stai cavalcando!",
+    "callablehorses.error.nohorse": "Attualmente non possiedi un cavallo personale!",
+    "callablehorses.error.notriding": "Devi essere a cavallo per fare ciò!",
+    "callablehorses.error.alreadyowned": "Questo cavallo ha già un proprietario!",
+    "callablehorses.error.alreadypersonal": "Questo è già il tuo cavallo personale!",
+    "callablehorses.error.area": "Non puoi chiamare il tuo cavallo in questa area!",
+    "callablehorses.error.range": "Il tuo cavallo è troppo lontano per sentirti!",
+    "callablehorses.error.setarea": "Non puoi impostare il tuo cavallo in questa area!",
+    "callablehorses.error.nospace": "Non c'è abbastanza spazio qui per chiamare il tuo cavallo!",
+
+    "callablehorses.success": "Ora questo è il tuo cavallo personale!",
+
+    "callablehorses.alert.death": "Il tuo cavallo personale è appena morto!",
+    "callablehorses.alert.offlinedeath": "Il tuo cavallo personale è morto mentre eri offline!"
+}
