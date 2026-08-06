@@ -1,0 +1,12 @@
+{
+  "whistle": {
+    "category": "master",
+    "sounds": [
+      { "name": "callablehorses:whistle1", "stream": false },
+      { "name": "callablehorses:whistle2", "stream": false },
+      { "name": "callablehorses:whistle3", "stream": false },
+      { "name": "callablehorses:whistle4", "stream": false },
+      { "name": "callablehorses:whistle5", "stream": false }
+    ]
+  }
+}

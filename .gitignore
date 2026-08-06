@@ -16,7 +16,19 @@ out
 # gradle
 build
 .gradle
+buildSrc/build
+buildSrc/.gradle
+
+# loom / moddev / forgegradle
+.architectury-transformer
+runs
+run
+*/run
+*/runs
+common/src/generated
+fabric/src/generated
+forge/src/generated
+neoforge/src/generated
 
 # other
 eclipse
-run

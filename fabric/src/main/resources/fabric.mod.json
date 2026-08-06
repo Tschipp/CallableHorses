@@ -1,0 +1,36 @@
+{
+    "schemaVersion": 1,
+    "id": "${mod_id}",
+    "version": "${version}",
+    "name": "${mod_name}",
+    "description": "${description}",
+    "authors": [
+        "${mod_author}"
+    ],
+    "contact": {
+        "homepage": "https://www.curseforge.com/minecraft/mc-mods/callable-horses",
+        "sources": "https://github.com/Tschipp/CallableHorses",
+        "issues": "https://github.com/Tschipp/CallableHorses/issues"
+    },
+    "license": "${license}",
+    "icon": "${mod_id}.png",
+    "environment": "*",
+    "entrypoints": {
+        "main": [
+            "tschipp.callablehorses.CallableHorsesFabric"
+        ],
+        "client": [
+            "tschipp.callablehorses.CallableHorsesFabricClient"
+        ]
+    },
+    "mixins": [
+        "${mod_id}.mixins.json",
+        "${mod_id}.fabric.mixins.json"
+    ],
+    "depends": {
+        "fabricloader": ">=0.16.9",
+        "fabric-api": "*",
+        "minecraft": "${fabric_minecraft_version_range}",
+        "java": ">=${java_version}"
+    }
+}

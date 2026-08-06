@@ -1,0 +1,80 @@
+plugins {
+    id 'multiloader-loader'
+    id 'net.minecraftforge.gradle' version '[6.0.46,6.2)'
+    id 'org.spongepowered.mixin' version '0.7-SNAPSHOT'
+    id 'idea'
+}
+base {
+    archivesName = "${mod_id}-forge-${minecraft_version}"
+}
+mixin {
+    config("${mod_id}.mixins.json")
+    config("${mod_id}.forge.mixins.json")
+}
+jar {
+    manifest {
+        attributes["MixinConfigs"] = "${mod_id}.mixins.json,${mod_id}.forge.mixins.json"
+    }
+}
+
+minecraft {
+    mappings channel: 'official', version: minecraft_version
+
+    copyIdeResources = true //Calls processResources when in dev
+
+    reobf = false // Forge 1.20.6+ uses official mappings at runtime, so we shouldn't reobf from official to SRG
+
+    // Forge 1.20.6+ compiles and runs against official mappings (see reobf = false above),
+    // so the common AT works here verbatim. It is copied into this module's resources by
+    // the multiloader-loader plugin, which is where Forge expects to find it at runtime.
+    def at = project(':common').file('src/main/resources/META-INF/accesstransformer.cfg')
+    if (at.exists()) {
+        accessTransformer = at
+    }
+
+    runs {
+        client {
+            workingDirectory file('runs/client')
+            ideaModule "${rootProject.name}.${project.name}.main"
+            taskName 'Client'
+            mods {
+                modClientRun {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory file('runs/server')
+            ideaModule "${rootProject.name}.${project.name}.main"
+            taskName 'Server'
+            mods {
+                modServerRun {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
+
+    // Forge's hack fix
+    implementation('net.sf.jopt-simple:jopt-simple:5.0.4') { version { strictly '5.0.4' } }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            fg.component(it)
+        }
+    }
+}
+
+sourceSets.each {
+    def dir = layout.buildDirectory.dir("sourcesSets/$it.name")
+    it.output.resourcesDir = dir
+    it.java.destinationDirectory = dir
+}
