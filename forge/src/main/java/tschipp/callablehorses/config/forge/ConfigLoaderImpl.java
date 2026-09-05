@@ -23,11 +23,12 @@ package tschipp.callablehorses.config.forge;
 import com.electronwill.nightconfig.core.AbstractConfig;
 import com.electronwill.nightconfig.core.UnmodifiableConfig;
 import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModLoadingContext;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.IConfigSpec;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import tschipp.callablehorses.Constants;
 import tschipp.callablehorses.config.AnnotationData;
 import tschipp.callablehorses.config.BuiltCategory;
@@ -40,28 +41,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Mod.EventBusSubscriber(modid = Constants.MOD_ID)
 public class ConfigLoaderImpl
 {
 	public static final Map<ForgeConfigSpec, BuiltConfig> CONFIGS = new HashMap<>();
 
-	public static void initialize(IEventBus modBus)
+	public static void initialize(FMLJavaModLoadingContext context)
 	{
-		modBus.addListener(ConfigLoaderImpl::onConfigLoad);
-		modBus.addListener(ConfigLoaderImpl::onConfigReload);
-
 		CONFIGS.forEach((spec, config) -> {
 			if (config.fileName.contains("client"))
-				ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, spec, config.fileName + ".toml");
+				context.registerConfig(ModConfig.Type.CLIENT, spec, config.fileName + ".toml");
 			else
-				ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, spec, config.fileName + ".toml");
+				context.registerConfig(ModConfig.Type.COMMON, spec, config.fileName + ".toml");
 		});
 	}
 
+	@SubscribeEvent
 	public static void onConfigLoad(ModConfigEvent.Loading event)
 	{
 		loadConfig(event.getConfig().getSpec());
 	}
 
+	@SubscribeEvent
 	public static void onConfigReload(ModConfigEvent.Reloading event)
 	{
 		loadConfig(event.getConfig().getSpec());

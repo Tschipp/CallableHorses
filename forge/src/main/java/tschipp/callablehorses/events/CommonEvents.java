@@ -20,7 +20,6 @@
 
 package tschipp.callablehorses.events;
 
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
@@ -28,7 +27,7 @@ import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import tschipp.callablehorses.Constants;
 import tschipp.callablehorses.caps.CallableHorsesCapabilities;
@@ -39,7 +38,7 @@ import tschipp.callablehorses.common.helper.HorseHelper;
 public class CommonEvents
 {
 	@SubscribeEvent
-	public static void onAttachCaps(AttachCapabilitiesEvent<Entity> event)
+	public static void onAttachCaps(AttachCapabilitiesEvent.Entities event)
 	{
 		if (event.getObject() instanceof Player)
 			event.addCapability(Constants.HORSE_OWNER_ID, new CallableHorsesCapabilities.OwnerProvider());
@@ -49,10 +48,9 @@ public class CommonEvents
 	}
 
 	@SubscribeEvent
-	public static void onEntityJoinLevel(EntityJoinLevelEvent event)
+	public static boolean onEntityJoinLevel(EntityJoinLevelEvent event)
 	{
-		if (EntityEventHandler.onEntityJoinLevel(event.getEntity(), event.getLevel()))
-			event.setCanceled(true);
+		return EntityEventHandler.onEntityJoinLevel(event.getEntity(), event.getLevel());
 	}
 
 	@SubscribeEvent

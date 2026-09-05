@@ -30,8 +30,10 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityProcessor;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
@@ -52,7 +54,7 @@ import java.util.UUID;
 public class HorseOwnerData
 {
 	private static final ResourceKey<Level> DEFAULT_DIM =
-			ResourceKey.create(Registries.DIMENSION, ResourceLocation.withDefaultNamespace("overworld"));
+			ResourceKey.create(Registries.DIMENSION, Identifier.withDefaultNamespace("overworld"));
 
 	private static final Codec<Vec3> LAST_SEEN_POS_CODEC = RecordCodecBuilder.create(instance -> instance.group(
 			Codec.INT.fieldOf("X").forGetter(pos -> (int) pos.x),
@@ -62,10 +64,10 @@ public class HorseOwnerData
 
 	private static final Codec<ResourceKey<Level>> DIMENSION_CODEC = Codec.STRING.xmap(
 			id -> {
-				ResourceLocation location = ResourceLocation.tryParse(id);
+				Identifier location = Identifier.tryParse(id);
 				return location == null ? DEFAULT_DIM : ResourceKey.create(Registries.DIMENSION, location);
 			},
-			key -> key.location().toString());
+			key -> key.identifier().toString());
 
 	public static final Codec<HorseOwnerData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
 			CompoundTag.CODEC.optionalFieldOf("horse").forGetter(data -> Optional.of(data.horseNBT)),
@@ -83,6 +85,9 @@ public class HorseOwnerData
 	private ResourceKey<Level> lastSeenDim = DEFAULT_DIM;
 	private Vec3 lastSeenPos = Vec3.ZERO;
 
+	//Never saved
+	private long lastCallTick = -1;
+
 	public HorseOwnerData()
 	{
 	}
@@ -98,14 +103,10 @@ public class HorseOwnerData
 	}
 
 	/**
-	 * Builds a new horse entity from the stored NBT, bumping the generation counter so
-	 * any stale copy still loaded elsewhere loses the anti-dupe comparison.
-	 */
-	/**
 	 * The stored tag, brought up to the running game's data version first.
 	 *
 	 * Anything that reads the stored horse has to go through here rather than
-	 * {@link #getHorseNBT}, or it works off pre-1.21 keys - including the entity id itself, which
+	 * {@link #getHorseNBT}, or it works off pre-1.21 keys, including the entity id itself, which
 	 * a datafixer may have renamed. Written back so the upgrade only runs once per binding.
 	 */
 	public CompoundTag getUpgradedHorseNBT()
@@ -120,15 +121,13 @@ public class HorseOwnerData
 		if (horseNBT.isEmpty())
 			return null;
 
-		Optional<EntityType<?>> type = EntityType.by(getUpgradedHorseNBT());
+		Optional<EntityType<?>> type = HorseHelper.getStoredType(getUpgradedHorseNBT());
 
 		if (type.isPresent())
 		{
-			Entity entity = type.get().create(world);
+			Entity entity = EntityType.loadEntityRecursive(horseNBT, world, EntitySpawnReason.LOAD, EntityProcessor.NOP);
 			if (entity instanceof Mob horse)
 			{
-				entity.load(horseNBT);
-
 				horseNum++;
 
 				// Unconditional: a fresh identity is what stops this copy colliding with the one
@@ -164,7 +163,7 @@ public class HorseOwnerData
 
 		stored.setHorseNum(horseNum);
 		stored.setOwned(true);
-		stored.setOwnerUUID(player.getGameProfile().getId().toString());
+		stored.setOwnerUUID(player.getGameProfile().id().toString());
 		stored.setStorageUUID(storageUUID);
 
 		// Serialised only now, because the binding above is part of the entity's saved data. Taking
@@ -211,6 +210,16 @@ public class HorseOwnerData
 	public void setStorageUUID(String id)
 	{
 		this.storageUUID = id;
+	}
+
+	public long getLastCallTick()
+	{
+		return lastCallTick;
+	}
+
+	public void setLastCallTick(long tick)
+	{
+		this.lastCallTick = tick;
 	}
 
 	public Vec3 getLastSeenPosition()

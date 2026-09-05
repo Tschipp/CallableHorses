@@ -38,8 +38,8 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.animal.horse.AbstractChestedHorse;
-import net.minecraft.world.entity.animal.horse.AbstractHorse;
+import net.minecraft.world.entity.animal.equine.AbstractChestedHorse;
+import net.minecraft.world.entity.animal.equine.AbstractHorse;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -63,6 +63,8 @@ import java.util.Optional;
 
 public class HorseManager
 {
+	private static final int CALL_COOLDOWN_TICKS = 20;
+
 	private static CallableHorsesConfig.Settings settings()
 	{
 		return Constants.COMMON_CONFIG.settings;
@@ -77,13 +79,18 @@ public class HorseManager
 		if (horseOwner == null)
 			return false;
 
+		long now = player.level().getGameTime();
+		if (horseOwner.getLastCallTick() >= 0 && now - horseOwner.getLastCallTick() < CALL_COOLDOWN_TICKS)
+			return false;
+		horseOwner.setLastCallTick(now);
+
 		if (horseOwner.getHorseNBT().isEmpty())
 		{
 			player.displayClientMessage(Component.translatable("callablehorses.error.nohorse").withStyle(ChatFormatting.RED), true);
 			return false;
 		}
 
-		Optional<EntityType<?>> storedType = EntityType.by(horseOwner.getUpgradedHorseNBT());
+		Optional<EntityType<?>> storedType = HorseHelper.getStoredType(horseOwner.getUpgradedHorseNBT());
 		if (storedType.isEmpty() || !HorseHelper.isCallableType(storedType.get()))
 		{
 			player.displayClientMessage(Component.translatable("callablehorses.error.nolongercallable").withStyle(ChatFormatting.RED), true);
@@ -105,7 +112,7 @@ public class HorseManager
 			StoredHorseData horse = HorseHelper.getHorseData(e);
 			if (horse != null && horse.getStorageUUID().equals(horseOwner.getStorageUUID()))
 			{
-				if (e.level().dimensionType() == player.level().dimensionType())
+				if (e.level().dimension().equals(player.level().dimension()))
 				{
 					e.ejectPassengers();
 
@@ -192,7 +199,7 @@ public class HorseManager
 		}
 
 		String owner = storedHorse.getOwnerUUID();
-		String playerID = player.getGameProfile().getId().toString();
+		String playerID = player.getGameProfile().id().toString();
 		boolean owned = storedHorse.isOwned();
 
 		if (owned && !owner.equals(playerID))
@@ -292,33 +299,22 @@ public class HorseManager
 
 
 	/**
-	 * Whether everything this mount carries can be stripped off it through the entity API.
-	 *
-	 * This one predicate decides the whole death policy. True means the copy can be emptied, so
-	 * letting vanilla drop the gear is safe and the two halves agree. False means some of it
-	 * cannot be reached - a Saddleable mount keeps its saddle in synched data with no un-equip
-	 * method, for one - so nothing may drop and the copy is left whole instead. Either way the
-	 * item exists exactly once afterwards.
+	 * Clears everything the mount is carrying, and heals it back to full.
+	 * Every slot is reachable through the entity API now that saddles live in
+	 * {@code EquipmentSlot.SADDLE} rather than in synched data, so vanilla is always left to drop
+	 * the gear and the stored copy is always emptied. The item exists exactly once afterwards.
 	 */
-	public static boolean canClearCarriedItems(Entity e)
-	{
-		return e instanceof AbstractHorse;
-	}
-
-	/** Clears whatever vanilla is about to drop, and heals the mount back to full. */
 	public static void prepDeadHorseForRespawning(Entity e)
 	{
 		if (!(e instanceof LivingEntity mount))
 			return;
 
-		// Only for mounts whose gear vanilla still drops. For the rest the drops are cancelled
-		// outright, so clearing these would destroy the items rather than preserve them.
-		if (canClearCarriedItems(mount))
-		{
-			for (EquipmentSlot slot : EquipmentSlot.values())
-				mount.setItemSlot(slot, ItemStack.EMPTY);
+		for (EquipmentSlot slot : EquipmentSlot.VALUES)
+			mount.setItemSlot(slot, ItemStack.EMPTY);
 
-			AbstractHorse horse = (AbstractHorse) mount;
+		// Chest cargo is the one thing that is not equipment, so it is emptied separately.
+		if (mount instanceof AbstractHorse horse)
+		{
 			((AbstractHorseAccessor) horse).callablehorses$getInventory().clearContent();
 
 			if (horse instanceof AbstractChestedHorse chested)
@@ -369,7 +365,7 @@ public class HorseManager
 				{
 					for (double z = startZ; z <= endZ; z++)
 					{
-						BlockPos pos = new BlockPos((int) x, (int) y, (int) z);
+						BlockPos pos = BlockPos.containing(x, y, z);
 						BlockState state = world.getBlockState(pos);
 						if (state.getCollisionShape(world, pos) != Shapes.empty())
 						{
@@ -393,16 +389,23 @@ public class HorseManager
 
 		if (!settings().callableInEveryDimension)
 		{
-			String playerDim = player.level().dimension().location().toString();
+			String playerDim = player.level().dimension().identifier().toString();
 
+			boolean dimAllowed = false;
 			for (String allowed : settings().callableDimsWhitelist)
 			{
 				if (allowed.equals(playerDim))
-					return true;
+				{
+					dimAllowed = true;
+					break;
+				}
 			}
 
-			player.displayClientMessage(Component.translatable("callablehorses.error.dim").withStyle(ChatFormatting.RED), true);
-			return false;
+			if (!dimAllowed)
+			{
+				player.displayClientMessage(Component.translatable("callablehorses.error.dim").withStyle(ChatFormatting.RED), true);
+				return false;
+			}
 		}
 
 		int maxDistance = settings().maxCallingDistance;
@@ -476,6 +479,10 @@ public class HorseManager
 		if (horse == null || !horse.isOwned())
 			return;
 
+		//Don't write a stale clone
+		if (world instanceof ServerLevel serverLevel && HorseHelper.getHorseNum(serverLevel, horse.getStorageUUID()) > horse.getHorseNum())
+			return;
+
 		CompoundTag nbt = HorseHelper.serializeEntity(e);
 		if (nbt.isEmpty())
 			return;
@@ -532,12 +539,5 @@ public class HorseManager
 	public static boolean shouldSuppressDrops(LivingEntity entity)
 	{
 		return settings().disableHorseDrops && HorseHelper.isOwnedHorse(entity);
-	}
-
-	public static boolean shouldSuppressAllDeathLoot(LivingEntity entity)
-	{
-		return !settings().deathIsPermanent
-				&& !canClearCarriedItems(entity)
-				&& HorseHelper.isOwnedHorse(entity);
 	}
 }

@@ -43,7 +43,7 @@ public class EntityEventHandler
 	// Returns true if the entity is a stale duplicate and should not exist.
 	public static boolean onEntityJoinLevel(Entity joiningEntity, Level world)
 	{
-		if (world.isClientSide)
+		if (world.isClientSide())
 			return false;
 
 		if (joiningEntity instanceof Player player)
@@ -150,25 +150,25 @@ public class EntityEventHandler
 
 	public static void onEntityLeaveLevel(Entity entity, Level world)
 	{
-		if (!world.isClientSide)
+		if (!world.isClientSide())
 			HorseManager.saveHorse(entity);
 	}
 
 	public static void onStopTracking(Player player, Entity target)
 	{
-		if (!player.level().isClientSide && target.isAlive())
+		if (!player.level().isClientSide() && target.isAlive())
 			HorseManager.saveHorse(target);
 	}
 
 	public static void onStartTracking(Player player, Entity target)
 	{
-		if (!player.level().isClientSide)
+		if (!player.level().isClientSide())
 			HorseHelper.sendHorseUpdateToClient(target, player);
 	}
 
 	public static void onLivingTick(LivingEntity entity)
 	{
-		if (entity.level().isClientSide)
+		if (entity.level().isClientSide())
 			return;
 
 		boolean debug = Constants.COMMON_CONFIG.settings.enableDebug;
@@ -198,7 +198,7 @@ public class EntityEventHandler
 
 	public static void onLivingDeath(LivingEntity entity)
 	{
-		if (entity.level().isClientSide)
+		if (entity.level().isClientSide())
 			return;
 
 		StoredHorseData horse = HorseHelper.getHorseData(entity);
@@ -220,7 +220,7 @@ public class EntityEventHandler
 				// The gear is lost: drops were suppressed for this mount, and a stored copy that
 				// cannot be rebuilt cannot hand them back either.
 				Constants.LOG.warn("Could not rebuild {}'s personal horse after death, clearing it instead",
-						owner.getGameProfile().getName());
+						owner.getGameProfile().name());
 			}
 
 			horseOwner.clearHorse();

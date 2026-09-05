@@ -23,7 +23,6 @@ package tschipp.callablehorses.common.worlddata;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
@@ -31,7 +30,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.world.level.saveddata.SavedDataType;
 import tschipp.callablehorses.Constants;
 
 import java.util.ArrayList;
@@ -48,12 +47,18 @@ public class StoredHorsesWorldData extends SavedData
 	private static final String KEY_DISBANDED = "disbanded";
 	private static final String KEY_OFFLINE_SAVED = "offlineSaved";
 
-	private static final MapCodec<StoredHorsesWorldData> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+	private static final MapCodec<StoredHorsesWorldData> RECORD_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
 			Codec.unboundedMap(Codec.STRING, Codec.INT).fieldOf(KEY_ENTRIES).forGetter(data -> data.entries),
 			Codec.STRING.listOf().optionalFieldOf(KEY_KILLED, List.of()).forGetter(data -> data.killedHorses),
 			Codec.STRING.listOf().optionalFieldOf(KEY_DISBANDED, List.of()).forGetter(data -> data.disbandedHorses),
 			Codec.unboundedMap(Codec.STRING, CompoundTag.CODEC).optionalFieldOf(KEY_OFFLINE_SAVED, Map.of()).forGetter(data -> data.offlineSavedHorses)
 	).apply(instance, StoredHorsesWorldData::new));
+
+	private static final Codec<StoredHorsesWorldData> LEGACY_CODEC =
+			CompoundTag.CODEC.xmap(StoredHorsesWorldData::readLegacy, StoredHorsesWorldData::writeCurrent);
+
+	public static final Codec<StoredHorsesWorldData> CODEC =
+			Codec.withAlternative(RECORD_CODEC.codec(), LEGACY_CODEC);
 
 	/** storage UUID to horse generation counter, used for anti-dupe comparisons. */
 	private final Map<String, Integer> entries = new HashMap<>();
@@ -74,59 +79,45 @@ public class StoredHorsesWorldData extends SavedData
 		this.offlineSavedHorses.putAll(offlineSavedHorses);
 	}
 
-	public static StoredHorsesWorldData load(CompoundTag nbt, HolderLookup.Provider provider)
-	{
-		if (!nbt.contains(KEY_ENTRIES, Tag.TAG_COMPOUND))
-			return loadLegacy(nbt);
-
-
-		return CODEC.codec().parse(NbtOps.INSTANCE, nbt)
-				.resultOrPartial(error -> Constants.LOG.error("Failed to read stored horse data: {}", error))
-				.orElseGet(StoredHorsesWorldData::new);
-	}
-
-	private static StoredHorsesWorldData loadLegacy(CompoundTag nbt)
+	private static StoredHorsesWorldData readLegacy(CompoundTag nbt)
 	{
 		StoredHorsesWorldData data = new StoredHorsesWorldData();
 
 		int i = 0;
 		while (nbt.contains("" + i))
 		{
-			CompoundTag subTag = nbt.getCompound("" + i);
-			data.entries.put(subTag.getString("id"), subTag.getInt("num"));
+			CompoundTag subTag = nbt.getCompoundOrEmpty("" + i);
+			data.entries.put(subTag.getStringOr("id", ""), subTag.getIntOr("num", 0));
 			i++;
 		}
 
 		i = 0;
-		CompoundTag killed = nbt.getCompound(KEY_KILLED);
+		CompoundTag killed = nbt.getCompoundOrEmpty(KEY_KILLED);
 		while (killed.contains("" + i))
 		{
-			data.killedHorses.add(killed.getCompound("" + i).getString("id"));
+			data.killedHorses.add(killed.getCompoundOrEmpty("" + i).getStringOr("id", ""));
 			i++;
 		}
 
 		i = 0;
-		CompoundTag disbanded = nbt.getCompound(KEY_DISBANDED);
+		CompoundTag disbanded = nbt.getCompoundOrEmpty(KEY_DISBANDED);
 		while (disbanded.contains("" + i))
 		{
-			data.disbandedHorses.add(disbanded.getCompound("" + i).getString("id"));
+			data.disbandedHorses.add(disbanded.getCompoundOrEmpty("" + i).getStringOr("id", ""));
 			i++;
 		}
 
 		return data;
 	}
 
-	@Override
-	public @NotNull CompoundTag save(@NotNull CompoundTag compound, HolderLookup.@NotNull Provider provider)
+	//In practice, only CODEC is used
+	private static CompoundTag writeCurrent(StoredHorsesWorldData data)
 	{
-		CODEC.codec().encodeStart(NbtOps.INSTANCE, this)
+		Tag encoded = RECORD_CODEC.codec().encodeStart(NbtOps.INSTANCE, data)
 				.resultOrPartial(error -> Constants.LOG.error("Failed to write stored horse data: {}", error))
-				.ifPresent(encoded -> {
-					if (encoded instanceof CompoundTag encodedCompound)
-						compound.merge(encodedCompound);
-				});
+				.orElseGet(CompoundTag::new);
 
-		return compound;
+		return encoded instanceof CompoundTag tag ? tag : new CompoundTag();
 	}
 
 	public void addHorseNum(String id, int num)
@@ -197,13 +188,14 @@ public class StoredHorsesWorldData extends SavedData
 		this.setDirty();
 	}
 
+	private static final SavedDataType<StoredHorsesWorldData> TYPE =
+			new SavedDataType<>(NAME, StoredHorsesWorldData::new, CODEC, DataFixTypes.LEVEL);
+
 	public static StoredHorsesWorldData getInstance(Level level)
 	{
 		if (!(level instanceof ServerLevel serverLevel))
 			throw new RuntimeException("Attempted to get the data from a client world. This is wrong.");
 
-		return serverLevel.getDataStorage().computeIfAbsent(
-				new SavedData.Factory<>(StoredHorsesWorldData::new, StoredHorsesWorldData::load, DataFixTypes.LEVEL),
-				NAME);
+		return serverLevel.getDataStorage().computeIfAbsent(TYPE);
 	}
 }

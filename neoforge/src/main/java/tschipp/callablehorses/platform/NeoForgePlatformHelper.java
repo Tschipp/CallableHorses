@@ -62,7 +62,7 @@ public class NeoForgePlatformHelper implements IPlatformHelper
 	@Override
 	public boolean isDevelopmentEnvironment()
 	{
-		return !FMLLoader.isProduction();
+		return !FMLLoader.getCurrent().isProduction();
 	}
 
 	@Override
@@ -94,7 +94,7 @@ public class NeoForgePlatformHelper implements IPlatformHelper
 	@Override
 	public void sendPacketToServer(PacketBase packet)
 	{
-		PacketDistributor.sendToServer(packet);
+		NeoForgeClientNetworking.sendToServer(packet);
 	}
 
 	@Override

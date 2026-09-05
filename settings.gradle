@@ -1,6 +1,7 @@
 pluginManagement {
     repositories {
         gradlePluginPortal()
+        mavenLocal()
         mavenCentral()
         exclusiveContent {
             forRepository {
@@ -36,6 +37,11 @@ pluginManagement {
             filter {
                 includeGroupAndSubgroups('net.minecraftforge')
             }
+        }
+
+        maven {
+            name = 'ParchmentMC'
+            url = uri('https://maven.parchmentmc.org')
         }
     }
 }

@@ -8,6 +8,8 @@ base {
     archivesName = "${mod_id}-forge-${minecraft_version}"
 }
 mixin {
+    add sourceSets.main, "${mod_id}.refmap.json"
+
     config("${mod_id}.mixins.json")
     config("${mod_id}.forge.mixins.json")
 }
@@ -37,6 +39,8 @@ minecraft {
             workingDirectory file('runs/client')
             ideaModule "${rootProject.name}.${project.name}.main"
             taskName 'Client'
+            property 'eventbus.api.strictRuntimeChecks', 'true'
+            args "-mixin.config=${mod_id}.mixins.json", "-mixin.config=${mod_id}.forge.mixins.json"
             mods {
                 modClientRun {
                     source sourceSets.main
@@ -48,6 +52,8 @@ minecraft {
             workingDirectory file('runs/server')
             ideaModule "${rootProject.name}.${project.name}.main"
             taskName 'Server'
+            property 'eventbus.api.strictRuntimeChecks', 'true'
+            args "-mixin.config=${mod_id}.mixins.json", "-mixin.config=${mod_id}.forge.mixins.json"
             mods {
                 modServerRun {
                     source sourceSets.main
@@ -60,6 +66,7 @@ minecraft {
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
+    annotationProcessor 'net.minecraftforge:eventbus-validator:7.0-beta.7'
 
     // Forge's hack fix
     implementation('net.sf.jopt-simple:jopt-simple:5.0.4') { version { strictly '5.0.4' } }

@@ -24,12 +24,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.Level;
@@ -37,13 +38,12 @@ import net.minecraft.world.phys.Vec3;
 import tschipp.callablehorses.Constants;
 import tschipp.callablehorses.common.data.HorseOwnerData;
 import tschipp.callablehorses.common.helper.HorseHelper;
-import tschipp.callablehorses.mixin.AbstractHorseAccessor;
 
 import org.jetbrains.annotations.Nullable;
 
 public class GuiStatViewer extends Screen
 {
-	private static final ResourceLocation TEXTURE = Constants.id("textures/gui/horse_stat_viewer.png");
+	private static final Identifier TEXTURE = Constants.id("textures/gui/horse_stat_viewer.png");
 
 	private final int xSize = 176;
 	private final int ySize = 138;
@@ -69,18 +69,6 @@ public class GuiStatViewer extends Screen
 
 		if (this.horse != null)
 		{
-			// Attributes are not part of the regular entity load, so they are applied first.
-			this.horse.getAttributes().load(owner.getUpgradedHorseNBT().getList("Attributes", 10));
-			this.horse.load(owner.getUpgradedHorseNBT());
-
-
-			if (this.horse instanceof AbstractHorse)
-			{
-				AbstractHorseAccessor accessor = (AbstractHorseAccessor) this.horse;
-				boolean saddled = !accessor.callablehorses$getInventory().getItem(AbstractHorse.INV_SLOT_SADDLE).isEmpty();
-				accessor.callablehorses$setFlag(Constants.HORSE_FLAG_SADDLE, saddled);
-			}
-
 			this.health = (float) Math.floor(horse.getHealth());
 			this.maxHealth = (float) (Math.floor(horse.getMaxHealth() * 10) / 10);
 			this.speed = (float) (Math.floor(horse.getAttributeValue(Attributes.MOVEMENT_SPEED) * 100) / 10);
@@ -96,11 +84,11 @@ public class GuiStatViewer extends Screen
 	@Override
 	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks)
 	{
-		this.renderBackground(graphics, mouseX, mouseY, partialTicks);
+		super.render(graphics, mouseX, mouseY, partialTicks);
 
 		int i = (this.width - this.xSize) / 2;
 		int j = (this.height - this.ySize) / 2;
-		graphics.blit(TEXTURE, i, j, 0, 0, this.xSize, this.ySize, 256, 256);
+		graphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, i, j, 0f, 0f, this.xSize, this.ySize, 256, 256);
 
 
 		if (this.horse != null)
@@ -125,7 +113,7 @@ public class GuiStatViewer extends Screen
 		graphics.drawString(mc.font, lastPos.equals(Vec3.ZERO) ? "Unknown" : "xyz = " + lastPos.x() + " " + lastPos.y() + " " + lastPos.z(), i + 8, j + 94, DyeColor.WHITE.getTextColor());
 
 		graphics.drawString(mc.font, "Last known dimension:", i + 8, j + 110, DyeColor.GRAY.getTextColor());
-		graphics.drawString(mc.font, this.lastDim.location().toString(), i + 8, j + 120, DyeColor.WHITE.getTextColor());
+		graphics.drawString(mc.font, this.lastDim.identifier().toString(), i + 8, j + 120, DyeColor.WHITE.getTextColor());
 	}
 
 	@Override
@@ -141,14 +129,14 @@ public class GuiStatViewer extends Screen
 	}
 
 	@Override
-	public boolean keyPressed(int keyCode, int scanCode, int modifiers)
+	public boolean keyPressed(KeyEvent event)
 	{
-		if (this.mc.options.keyInventory.matches(keyCode, scanCode))
+		if (this.mc.options.keyInventory.matches(event))
 		{
 			this.onClose();
 			return true;
 		}
 
-		return super.keyPressed(keyCode, scanCode, modifiers);
+		return super.keyPressed(event);
 	}
 }

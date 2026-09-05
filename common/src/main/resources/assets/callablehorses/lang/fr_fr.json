@@ -1,5 +1,5 @@
 {
-    "key.callablehorses.category": "Callable Horses",
+    "key.category.callablehorses.category": "Callable Horses",
     "key.sethorse.desc": "Définir le Cheval",
     "key.callhorse.desc": "Appeler le Cheval",
     "key.showstats.desc": "Afficher les Statistiques du Cheval",

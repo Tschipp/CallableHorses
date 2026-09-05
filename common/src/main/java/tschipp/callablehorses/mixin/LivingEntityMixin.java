@@ -32,19 +32,10 @@ import tschipp.callablehorses.common.HorseManager;
 @Mixin(LivingEntity.class)
 public class LivingEntityMixin
 {
-	@Inject(method = "dropFromLootTable(Lnet/minecraft/world/damagesource/DamageSource;Z)V", at = @At("HEAD"), cancellable = true)
-	private void callablehorses$suppressOwnedHorseDrops(DamageSource damageSource, boolean hitByPlayer, CallbackInfo ci)
+	@Inject(method = "dropFromLootTable(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;Z)V", at = @At("HEAD"), cancellable = true)
+	private void callablehorses$suppressOwnedHorseDrops(ServerLevel level, DamageSource damageSource, boolean hitByPlayer, CallbackInfo ci)
 	{
 		if (HorseManager.shouldSuppressDrops((LivingEntity) (Object) this))
-			ci.cancel();
-	}
-
-	// HEAD only. Forge and NeoForge patch captureDrops(new ArrayList<>()) in as the first
-	// statement, and any later injection point strands that capture list.
-	@Inject(method = "dropAllDeathLoot(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;)V", at = @At("HEAD"), cancellable = true)
-	private void callablehorses$suppressAllDeathLoot(ServerLevel level, DamageSource damageSource, CallbackInfo ci)
-	{
-		if (HorseManager.shouldSuppressAllDeathLoot((LivingEntity) (Object) this))
 			ci.cancel();
 	}
 }

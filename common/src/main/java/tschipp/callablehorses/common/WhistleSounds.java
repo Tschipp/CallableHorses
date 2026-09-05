@@ -22,17 +22,13 @@ package tschipp.callablehorses.common;
 
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvent;
 import tschipp.callablehorses.Constants;
 
-/**
- * The instance is built here so common code can reference it directly, but registration is left
- * to each loader, because Forge and NeoForge freeze their registries and need their own event.
- */
 public class WhistleSounds
 {
-	public static final ResourceLocation WHISTLE_ID = Constants.id("whistle");
+	public static final Identifier WHISTLE_ID = Constants.id("whistle");
 
 	public static final SoundEvent WHISTLE = SoundEvent.createVariableRangeEvent(WHISTLE_ID);
 

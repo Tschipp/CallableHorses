@@ -27,7 +27,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.network.CustomPayloadEvent;
@@ -170,12 +169,10 @@ public class ForgePlatformHelper implements IPlatformHelper
 	@Override
 	public boolean isAreaProtected(Player player, Entity probe)
 	{
-		PlayerInteractEvent.EntityInteract interactEvent = new PlayerInteractEvent.EntityInteract(player, InteractionHand.MAIN_HAND, probe);
-		AttackEntityEvent attackEvent = new AttackEntityEvent(player, probe);
+		boolean interactDenied = PlayerInteractEvent.EntityInteract.BUS.post(
+				new PlayerInteractEvent.EntityInteract(player, InteractionHand.MAIN_HAND, probe));
+		boolean attackDenied = AttackEntityEvent.BUS.post(new AttackEntityEvent(player, probe));
 
-		MinecraftForge.EVENT_BUS.post(interactEvent);
-		MinecraftForge.EVENT_BUS.post(attackEvent);
-
-		return interactEvent.isCanceled() || attackEvent.isCanceled();
+		return interactDenied || attackDenied;
 	}
 }

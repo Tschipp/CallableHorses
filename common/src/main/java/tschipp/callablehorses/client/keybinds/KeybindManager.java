@@ -22,12 +22,13 @@ package tschipp.callablehorses.client.keybinds;
 
 import net.minecraft.client.KeyMapping;
 import org.lwjgl.glfw.GLFW;
+import tschipp.callablehorses.Constants;
 
 import java.util.List;
 
 public class KeybindManager
 {
-	public static final String CATEGORY = "key.callablehorses.category";
+	public static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(Constants.id("category"));
 
 	public static final KeyMapping SET_HORSE = new KeyMapping("key.sethorse.desc", GLFW.GLFW_KEY_O, CATEGORY);
 	public static final KeyMapping CALL_HORSE = new KeyMapping("key.callhorse.desc", GLFW.GLFW_KEY_V, CATEGORY);

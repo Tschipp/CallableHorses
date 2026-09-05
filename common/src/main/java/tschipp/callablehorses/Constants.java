@@ -20,7 +20,7 @@
 
 package tschipp.callablehorses;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
@@ -42,20 +42,18 @@ public class Constants
 	 */
 	public static final TagKey<EntityType<?>> CALLABLE_HORSES = TagKey.create(Registries.ENTITY_TYPE, id("callablehorses"));
 
-	public static final ResourceLocation CALL_FOLLOW_RANGE_MODIFIER = id("call_follow_range");
+	public static final Identifier CALL_FOLLOW_RANGE_MODIFIER = id("call_follow_range");
 
-	public static final int HORSE_FLAG_SADDLE = 4;
+	public static final Identifier HORSE_OWNER_ID = id("horse_owner");
+	public static final Identifier STORED_HORSE_ID = id("stored_horse");
 
-	public static final ResourceLocation HORSE_OWNER_ID = id("horse_owner");
-	public static final ResourceLocation STORED_HORSE_ID = id("stored_horse");
+	public static final Identifier PACKET_ID_SYNC_HORSE = id("sync_horse");
+	public static final Identifier PACKET_ID_SYNC_OWNER_SHOW_STATS = id("sync_owner_show_stats");
+	public static final Identifier PACKET_ID_PRESS_KEY = id("press_key");
+	public static final Identifier PACKET_ID_PLAY_WHISTLE = id("play_whistle");
 
-	public static final ResourceLocation PACKET_ID_SYNC_HORSE = id("sync_horse");
-	public static final ResourceLocation PACKET_ID_SYNC_OWNER_SHOW_STATS = id("sync_owner_show_stats");
-	public static final ResourceLocation PACKET_ID_PRESS_KEY = id("press_key");
-	public static final ResourceLocation PACKET_ID_PLAY_WHISTLE = id("play_whistle");
-
-	public static ResourceLocation id(String path)
+	public static Identifier id(String path)
 	{
-		return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
+		return Identifier.fromNamespaceAndPath(MOD_ID, path);
 	}
 }

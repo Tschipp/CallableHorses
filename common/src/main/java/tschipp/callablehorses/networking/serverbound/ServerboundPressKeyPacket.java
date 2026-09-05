@@ -59,7 +59,7 @@ public record ServerboundPressKeyPacket(int key) implements PacketBase
 			case KEY_CALL_HORSE -> HorseManager.callHorse(serverPlayer);
 			case KEY_SET_HORSE -> HorseManager.setHorse(serverPlayer);
 			case KEY_SHOW_STATS -> HorseManager.showHorseStats(serverPlayer);
-			default -> Constants.LOG.warn("Received unknown key press id {} from {}", key, serverPlayer.getGameProfile().getName());
+			default -> Constants.LOG.warn("Received unknown key press id {} from {}", key, serverPlayer.getGameProfile().name());
 		}
 	}
 }

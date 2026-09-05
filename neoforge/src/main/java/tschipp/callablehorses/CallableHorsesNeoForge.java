@@ -47,18 +47,20 @@ public class CallableHorsesNeoForge
 	public static final Supplier<AttachmentType<HorseOwnerData>> HORSE_OWNER = ATTACHMENT_TYPES.register(
 			Constants.HORSE_OWNER_ID.getPath(),
 			() -> AttachmentType.builder(HorseOwnerData::new)
-					.serialize(HorseOwnerData.CODEC)
+					.serialize(HorseOwnerData.CODEC.fieldOf("data"))
 					.copyOnDeath()
 					.build());
 
 	public static final Supplier<AttachmentType<StoredHorseData>> STORED_HORSE = ATTACHMENT_TYPES.register(
 			Constants.STORED_HORSE_ID.getPath(),
 			() -> AttachmentType.builder(StoredHorseData::new)
-					.serialize(StoredHorseData.CODEC)
+					.serialize(StoredHorseData.CODEC.fieldOf("data"))
 					.build());
 
-	public CallableHorsesNeoForge(IEventBus modBus, ModContainer container)
+	public CallableHorsesNeoForge(ModContainer container)
 	{
+		IEventBus modBus = container.getEventBus();
+
 		CallableHorsesCommon.registerConfig();
 		ConfigLoaderImpl.initialize(container);
 

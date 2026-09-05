@@ -21,17 +21,13 @@
 package tschipp.callablehorses.mixin;
 
 import net.minecraft.world.SimpleContainer;
-import net.minecraft.world.entity.animal.horse.AbstractHorse;
+import net.minecraft.world.entity.animal.equine.AbstractHorse;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
-import org.spongepowered.asm.mixin.gen.Invoker;
 
 @Mixin(AbstractHorse.class)
 public interface AbstractHorseAccessor
 {
 	@Accessor("inventory")
 	SimpleContainer callablehorses$getInventory();
-
-	@Invoker("setFlag")
-	void callablehorses$setFlag(int flag, boolean value);
 }

@@ -22,14 +22,16 @@ package tschipp.callablehorses.common.helper;
 
 import com.mojang.serialization.Dynamic;
 import net.minecraft.SharedConstants;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.util.datafix.DataFixers;
 import net.minecraft.util.datafix.fixes.References;
 import net.minecraft.world.entity.Entity;
@@ -37,6 +39,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.TagValueOutput;
 import tschipp.callablehorses.Constants;
 import tschipp.callablehorses.common.data.HorseOwnerData;
 import tschipp.callablehorses.common.data.StoredHorseData;
@@ -45,6 +48,7 @@ import tschipp.callablehorses.networking.clientbound.ClientboundHorseDataSyncPac
 import tschipp.callablehorses.platform.Services;
 
 import org.jetbrains.annotations.Nullable;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -93,16 +97,31 @@ public class HorseHelper
 
 	public static CompoundTag serializeEntity(Entity entity)
 	{
-		CompoundTag tag = new CompoundTag();
-
 		if (!canSerialize(entity))
-			return tag;
+			return new CompoundTag();
+
+		CompoundTag tag;
+		try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(entity.problemPath(), Constants.LOG))
+		{
+			TagValueOutput output = TagValueOutput.createWithContext(reporter, entity.registryAccess());
+			entity.saveWithoutId(output);
+			tag = output.buildResult();
+		}
 
 		tag.putString("id", EntityType.getKey(entity.getType()).toString());
-		entity.saveWithoutId(tag);
 
 		NbtUtils.addCurrentDataVersion(tag);
 		return tag;
+	}
+
+	public static Optional<EntityType<?>> getStoredType(CompoundTag tag)
+	{
+		String id = tag.getString("id").orElse("");
+		if (id.isEmpty())
+			return Optional.empty();
+
+		Identifier location = Identifier.tryParse(id);
+		return location == null ? Optional.empty() : BuiltInRegistries.ENTITY_TYPE.getOptional(location);
 	}
 
 	public static CompoundTag upgradeStoredEntity(CompoundTag tag)
@@ -111,7 +130,7 @@ public class HorseHelper
 			return tag;
 
 		int version = NbtUtils.getDataVersion(tag, LEGACY_DATA_VERSION);
-		int current = SharedConstants.getCurrentVersion().getDataVersion().getVersion();
+		int current = SharedConstants.getCurrentVersion().dataVersion().version();
 		if (version >= current)
 			return tag;
 

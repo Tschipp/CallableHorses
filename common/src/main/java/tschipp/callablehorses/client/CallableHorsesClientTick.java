@@ -28,30 +28,26 @@ import tschipp.callablehorses.platform.Services;
 
 public class CallableHorsesClientTick
 {
-	private static final long PRESS_COOLDOWN_MS = 500;
-
-	private static long lastPressTime = 0;
-
 	public static void onClientTick(Player player)
 	{
 		if (player == null)
 			return;
 
-		if (KeybindManager.CALL_HORSE.isDown())
+		while (KeybindManager.CALL_HORSE.consumeClick())
 			send(ServerboundPressKeyPacket.KEY_CALL_HORSE);
-		else if (KeybindManager.SET_HORSE.isDown())
+
+		while (KeybindManager.SET_HORSE.consumeClick())
 			send(ServerboundPressKeyPacket.KEY_SET_HORSE);
-		else if (Constants.COMMON_CONFIG.settings.enableStatsViewer && KeybindManager.SHOW_STATS.isDown())
-			send(ServerboundPressKeyPacket.KEY_SHOW_STATS);
+
+		while (KeybindManager.SHOW_STATS.consumeClick())
+		{
+			if (Constants.COMMON_CONFIG.settings.enableStatsViewer)
+				send(ServerboundPressKeyPacket.KEY_SHOW_STATS);
+		}
 	}
 
 	private static void send(int key)
 	{
-		long now = System.currentTimeMillis();
-		if (now - lastPressTime <= PRESS_COOLDOWN_MS)
-			return;
-
-		lastPressTime = now;
 		Services.PLATFORM.sendPacketToServer(new ServerboundPressKeyPacket(key));
 	}
 }

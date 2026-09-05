@@ -21,8 +21,9 @@
 package tschipp.callablehorses;
 
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraft.resources.Identifier;
+import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -34,31 +35,34 @@ import tschipp.callablehorses.common.WhistleSounds;
 import tschipp.callablehorses.config.forge.ConfigLoaderImpl;
 
 @Mod(Constants.MOD_ID)
+@Mod.EventBusSubscriber(modid = Constants.MOD_ID)
 public class CallableHorsesForge
 {
 	public static SimpleChannel network;
 
 	public CallableHorsesForge(FMLJavaModLoadingContext context)
 	{
-		IEventBus modBus = context.getModEventBus();
-
 		CallableHorsesCommon.registerConfig();
-		ConfigLoaderImpl.initialize(modBus);
-
-		modBus.addListener(this::registerSounds);
-		modBus.addListener(this::setup);
-		modBus.addListener(CallableHorsesCapabilities::register);
+		ConfigLoaderImpl.initialize(context);
 	}
 
-	private void registerSounds(final RegisterEvent event)
+	@SubscribeEvent
+	public static void registerCapabilities(final RegisterCapabilitiesEvent event)
+	{
+		CallableHorsesCapabilities.register(event);
+	}
+
+	@SubscribeEvent
+	public static void registerSounds(final RegisterEvent event)
 	{
 		event.register(Registries.SOUND_EVENT, helper -> helper.register(WhistleSounds.WHISTLE_ID, WhistleSounds.WHISTLE));
 	}
 
-	private void setup(final FMLCommonSetupEvent event)
+	@SubscribeEvent
+	public static void setup(final FMLCommonSetupEvent event)
 	{
 		network = ChannelBuilder
-				.named(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "callablehorseschannel"))
+				.named(Identifier.fromNamespaceAndPath(Constants.MOD_ID, "callablehorseschannel"))
 				.simpleChannel();
 
 		CallableHorsesCommon.registerServerPackets();

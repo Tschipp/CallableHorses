@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.1.0] - 2026-08-06
+
+- Updated to Minecraft 1.21.11 on Fabric, Forge 61 and NeoForge 21.11
+- Fixed a stale copy of a personal mount overwriting the stored one when it was cleaned up,
+  which reverted its health, gear and chest contents to an older state
+
 ## [2.0.0] - 2026-08-04
 
 - Rewritten as a multiloader mod: Fabric, Forge and NeoForge are now supported

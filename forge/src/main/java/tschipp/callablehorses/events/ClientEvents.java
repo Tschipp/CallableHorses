@@ -22,7 +22,7 @@ package tschipp.callablehorses.events;
 
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import tschipp.callablehorses.CallableHorsesCommonClient;
 import tschipp.callablehorses.Constants;
@@ -32,11 +32,8 @@ import tschipp.callablehorses.client.CallableHorsesClientTick;
 public class ClientEvents
 {
 	@SubscribeEvent
-	public static void onClientTick(TickEvent.ClientTickEvent event)
+	public static void onClientTick(TickEvent.ClientTickEvent.Post event)
 	{
-		if (event.phase != TickEvent.Phase.END)
-			return;
-
 		CallableHorsesClientTick.onClientTick(CallableHorsesCommonClient.getPlayer());
 	}
 }

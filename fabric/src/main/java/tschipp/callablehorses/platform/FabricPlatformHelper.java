@@ -155,6 +155,6 @@ public class FabricPlatformHelper implements IPlatformHelper
 		InteractionResult attack = AttackEntityCallback.EVENT.invoker()
 				.interact(player, player.level(), InteractionHand.MAIN_HAND, probe, null);
 
-		return use == InteractionResult.FAIL || attack == InteractionResult.FAIL;
+		return use instanceof InteractionResult.Fail || attack instanceof InteractionResult.Fail;
 	}
 }
