@@ -6,7 +6,7 @@
 	  "predicate": {
 		   "type": "#callablehorses:callablehorses"
 	  },
-	  "entity": "THIS"
+	  "entity": "this"
     }
   ]
 }
