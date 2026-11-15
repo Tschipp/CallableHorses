@@ -1,4 +1,5 @@
 {
+  "type": "callablehorses:horse_drop",
   "conditions": [
     {
 	  "condition": "minecraft:entity_properties",
